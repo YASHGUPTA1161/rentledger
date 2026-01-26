@@ -13,10 +13,128 @@ datasource db {
   provider = "postgresql"
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean  @default(false)
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role // 👈 REQUIRED
   createdAt DateTime @default(now())
+
+  landlord Landlord?
+  tenant   Tenant?
+}
+
+enum Role {
+  landlord
+  tenant
+}
+
+model Landlord {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  name         String
+  contactPhone String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id])
+  properties Property[]
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  fullName  String
+  email     String
+  address   String
+  createdAt DateTime @default(now())
+
+  policeVerificationNumber String?
+  policeVerificationDate   DateTime?
+
+  user      User       @relation(fields: [userId], references: [id])
+  tenancies Tenancy[]
+  bills     Bill[]
+  documents Document[]
+}
+
+model Property {
+  id           String   @id @default(uuid())
+  landlordId   String
+  address      String
+  propertyType String
+  description  String
+  createdAt    DateTime @default(now())
+
+  landlord  Landlord  @relation(fields: [landlordId], references: [id])
+  tenancies Tenancy[]
+  bills     Bill[]
+}
+
+model Tenancy {
+  id              String      @id @default(uuid())
+  tenantId        String
+  propertyId      String
+  leaseStart      DateTime
+  leaseEnd        DateTime
+  status          LeaseStatus
+  securityDeposit Decimal     @db.Decimal(10, 2)
+  createdAt       DateTime    @default(now())
+  endedAt         DateTime?
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id])
+}
+
+model Document {
+  id           String       @id @default(uuid())
+  tenantId     String
+  billId       String?
+  documentType DocumentType
+  fileUrl      String
+  generatedAt  DateTime
+  createdAt    DateTime     @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  bill   Bill?  @relation(fields: [billId], references: [id])
+}
+
+enum DocumentType {
+  rent_receipt
+  verification
+  statement
+}
+
+enum LeaseStatus {
+  active
+  ended
+}
+
+model Bill {
+  id          String        @id @default(uuid())
+  tenantId    String
+  propertyId  String
+  billType    BillType
+  periodStart DateTime
+  periodEnd   DateTime
+  dueDate     DateTime
+  amount      Decimal       @db.Decimal(10, 2)
+  status      PaymentStatus
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  property  Property   @relation(fields: [propertyId], references: [id])
+  documents Document[]
+}
+
+enum BillType {
+  rent
+  electricity
+  water
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  overdue
 }

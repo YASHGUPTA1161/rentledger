@@ -1,0 +1,13 @@
+# run postgres with docker 
+
+--docker run --name some-postgres -e POSTGRES_PASSWORD=mysecret -p 5431:5432 -d postgres
+--docker ps -a 
+
+#Resetting postgres
+--docker stop some-postgres
+--docker rm some-postgres 
+
+#Persist data with volume 
+--first remove docker image
+--docker volume create postgres-data(postgres-data or whatever you like)
+--docker run --name rentledger -e POSTGRES_PASSWORD=mysecret -p 5431:5432 -v postgres-data:/var/lib/postgresql/data -d postgres
