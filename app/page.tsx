@@ -1,6 +1,10 @@
-import prisma from "@/lib/db";
+import { Uploader } from "@/components/web/Uploader";
 
-export default async function Home() {
-  const properties = await prisma.property.findMany();
-  return <pre>{JSON.stringify(properties, null, 2)}</pre>;
+export default function Home() {
+  return (
+    <div className="max-w-2xl mx-auto flex min-h-screen flex-col items-center justify-center ">
+      <h1 className="text-4xl font-bold pb-10">Upload your Files with S3 📂</h1>
+      <Uploader />
+    </div>
+  );
 }
