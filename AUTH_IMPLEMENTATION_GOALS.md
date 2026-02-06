@@ -13,10 +13,10 @@ Complete checklist for implementing authentication, sessions, and security in Re
 - [ ] Test Redis connection
 
 ### Bcrypt Configuration
-- [ ] Extract salt rounds to environment variable
-- [ ] Create bcrypt utility with configurable rounds
-- [ ] Update signup action to use config
-- [ ] Document password requirements
+- [x] Extract salt rounds to environment variable
+- [x] Create bcrypt utility with configurable rounds
+- [x] Update signup action to use config
+- [x] Document password requirements
 
 ### Login Implementation
 - [ ] Create login page (`app/(auth)/login/page.tsx`)
