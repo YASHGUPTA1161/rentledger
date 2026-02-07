@@ -99,7 +99,7 @@ model Landlord {
   id           String   @id @default(uuid())
   userId       String   @unique
   name         String
-  contactPhone String
+  contactPhone String?
   createdAt    DateTime @default(now())
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)

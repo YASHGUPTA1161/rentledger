@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import bcrypt from "bcrypt";
 import { FormState, LoginFormSchema } from "@/app/lib/definitions";
 import * as jose from "jose";
+import { redirect } from "next/navigation";
 
 export async function loginAction(formData: FormData): Promise<FormState> {
   const validationResult = LoginFormSchema.safeParse({
@@ -52,7 +53,7 @@ export async function loginAction(formData: FormData): Promise<FormState> {
       maxAge: 60 * 60 * 2, // 2 hours (match JWT expiry)
     });
 
-    return { message: "Login successful" };
+    redirect("/dashboard");
   } catch (error) {
     console.error("Login error: ", error);
     return {

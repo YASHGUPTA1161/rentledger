@@ -1,0 +1,197 @@
+# 💰 RentLedger: Money-Flow Priority Matrix
+
+## 🔥 TIER 1: MONEY CRITICAL (Build First or Die)
+*If these don't work, you don't have a business. Period.*
+
+### 🎯 Core Revenue Engine
+1. **Billing System** - The literal money pipe
+   - Generate rent bills
+   - Track payment status (pending/paid/overdue)
+   - Mark bill as paid + paidAt timestamp
+   - Bill history per tenant/property
+   
+   **Why First?** → No bills = no money tracking = no product
+   
+   **What breaks without it?** → Landlords can't track who owes what. Zero revenue visibility.
+
+2. **Multi-Tenant Architecture + Property Management**
+   - `landlordId` scoping on all records
+   - Create/edit/view properties
+   - Tenant assignment to landlord
+   
+   **Why This High?** → You need somewhere to attach bills to. Bills without properties/tenants = useless.
+   
+   **What breaks without it?** → Can't associate money with actual real estate.
+
+3. **Tenancy/Lease Management**
+   - Create tenancy (tenant + property link)
+   - Lease dates (start/end)
+   - Prevent overlapping leases
+   - Track active vs ended
+   
+   **Why Money-Critical?** → Determines who's supposed to pay rent. Overlapping leases = billing chaos.
+   
+   **What breaks without it?** → Could accidentally bill wrong tenant or double-bill same unit.
+
+---
+
+## ⚡ TIER 2: MONEY ENABLERS (Build Second)
+*These make the money features actually usable in production.*
+
+4. **Authentication & Sessions** ✅ *You got this started*
+   - Signup/Login/Logout
+   - Role-based access (landlord/tenant)
+   - Session management
+   - `getAuthContext()` → userId, landlordId, role
+   
+   **Why Now?** → Without auth, anyone can see/modify anyone's bills. That's a lawsuit.
+   
+   **What breaks without it?** → Zero security. One landlord sees another's revenue. Game over.
+
+5. **PDF Generation (Receipts)**
+   - Generate rent receipt PDF
+   - Store in S3
+   - Download receipt
+   
+   **Why Money-Related?** → Landlords need proof of payment for taxes. Tenants need receipts for records.
+   
+   **What breaks without it?** → Manual receipt creation. Landlord wastes hours. Won't pay for SaaS.
+
+6. **Tenant Management**
+   - Add tenant
+   - Tenant profile
+   - View all tenants per landlord
+   
+   **Why Here?** → You need tenant info to generate bills. But the core data model is simpler than billing logic.
+
+---
+
+## 🛠 TIER 3: OPERATIONAL NICE-TO-HAVES (Build Third)
+*These improve experience but don't directly touch money flow.*
+
+7. **Document Management**
+   - Upload PDFs/images ✅ *You already got this*
+   - Tag document type (lease, receipt, verification)
+   - Link to tenant/tenancy/bill
+   
+   **Why Not Higher?** → Doesn't directly create or track money. Just organizes paperwork.
+
+8. **Notifications & Reminders**
+   - Rent due reminder
+   - Overdue alert
+   - Scheduled cron (monthly bill generation, overdue detection)
+   
+   **Why Important?** → Automates bill creation. Reduces missed rent. But doesn't break if you manually generate bills first.
+
+9. **Maintenance Requests**
+   - Tenant creates request
+   - Landlord updates status
+   - Track per property/tenant
+   
+   **Why Lower?** → This is about property upkeep, not revenue tracking. Nice to have but not money-critical.
+
+10. **Utility Bills**
+    - Electricity, water, etc.
+    - Same status tracking as rent
+    
+    **Why Separate from Tier 1?** → Rent is primary revenue. Utilities might just be passed through. Build after core rent billing works.
+
+---
+
+## 📊 TIER 4: COMPLIANCE & REGIONAL FEATURES (Build Last)
+*Location-specific or regulatory stuff. Important but not universal.*
+
+11. **Police Verification (India-specific)**
+    - Store verification number/date
+    - Upload verification doc
+    - Track status (pending/verified/expired)
+    
+    **Why Last?** → Only relevant in India. If you're launching in India first, bump this up. Otherwise, wait.
+
+12. **PDF Monthly Statements**
+    - Generate monthly statement PDF
+    - Store in S3
+    
+    **Why Not Tier 2?** → Receipts are per-transaction (urgent). Monthly statements are nice summary reports (can wait).
+
+---
+
+## 🎨 TIER 5: POLISH & ANALYTICS (Build When Everything Works)
+*Dashboard views - only valuable when data is flowing correctly.*
+
+13. **Landlord Dashboard**
+    - Active tenants count
+    - Total properties
+    - Rent collected vs pending
+    - Overdue bills
+    - Open maintenance requests
+    
+    **Why Last?** → Dashboards display data. Build the data capture first.
+
+14. **Tenant Dashboard**
+    - Current rent status
+    - Bills history
+    - Lease info
+    - Maintenance requests
+    
+    **Same reason** → Display layer is worthless without working backend.
+
+---
+
+## 🚀 Recommended Build Order (Money-First Path)
+
+```
+Phase 1: Core Money Engine
+├─ 1. Multi-tenant data model (landlordId scoping)
+├─ 2. Property CRUD
+├─ 3. Tenant CRUD  
+├─ 4. Tenancy/Lease linking
+└─ 5. Billing system (generate, track status, mark paid)
+
+Phase 2: Security & Proof
+├─ 6. Auth hardening (role enforcement, session security)
+├─ 7. PDF receipt generation
+└─ 8. Cross-landlord access prevention
+
+Phase 3: Automation & UX
+├─ 9. Notifications (rent reminders, overdue alerts)
+├─ 10. Document management integration
+└─ 11. Utility bills (if needed)
+
+Phase 4: Operations
+├─ 12. Maintenance requests
+└─ 13. Police verification (if India market)
+
+Phase 5: Polish
+├─ 14. Landlord dashboard
+└─ 15. Tenant dashboard
+```
+
+---
+
+## 🎯 The Quiet Strategic Truth
+
+**Features that directly affect money flow:**
+- Billing System ← **THE BIG ONE**
+- Tenancy Management ← Determines who pays
+- Property Management ← Determines what's being rented
+- Auth ← Protects the money data
+- PDF Receipts ← Proof of money movement
+
+**Everything else is either:**
+- Supporting infrastructure (tenant mgmt, docs)
+- Nice-to-have automation (notifications)
+- Compliance theater (verifications)
+- Eye candy (dashboards)
+
+**The Real Question:**
+If you had to launch with ONLY 5 features to collect rent digitally, it's:
+1. Auth (who you are)
+2. Properties (what you own)
+3. Tenancies (who rents what)
+4. Bills (who owes what)
+5. Mark Paid (receipt of money)
+
+Everything else is optimization.
+
+That's the stripped-down, no-BS truth. 💯
