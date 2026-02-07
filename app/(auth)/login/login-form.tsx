@@ -6,6 +6,8 @@ import { FormState, LoginFormSchema } from "@/app/lib/definitions";
 import { toast } from "sonner";
 import { loginAction } from "./actions";
 
+type LoginField = keyof typeof LoginFormSchema.shape;
+
 export default function LoginForm() {
   const router = useRouter();
   const [state, setState] = useState<FormState>(undefined);
@@ -17,23 +19,24 @@ export default function LoginForm() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    // Validate individual field
-    try {
-      const fieldSchema = LoginFormSchema.pick({ [name]: true } as any);
-      const result = fieldSchema.safeParse({ [name]: value });
 
-      if (!result.success) {
-        const errors = result.error.flatten().fieldErrors;
-        setClientErrors((prev) => ({
-          ...prev,
-          [name]: errors[name as keyof typeof errors],
-        }));
-      } else {
-        setClientErrors((prev) => ({ ...prev, [name]: undefined }));
-      }
-    } catch (error) {
-      console.error("Validation error:", error);
+    if (!(name in LoginFormSchema.shape)) return;
+
+    const fieldName = name as LoginField;
+    const fieldSchema = LoginFormSchema.shape[fieldName];
+
+    const result = fieldSchema.safeParse(value);
+
+    if (!result.success) {
+      setClientErrors((prev) => ({
+        ...prev,
+        [fieldName]: result.error.issues.map((issue) => issue.message),
+      }));
+    } else {
+      setClientErrors((prev) => ({
+        ...prev,
+        [fieldName]: undefined,
+      }));
     }
   };
 
@@ -66,7 +69,9 @@ export default function LoginForm() {
         />
         {(clientErrors.email || state?.errors?.email) && (
           <p className="text-red-500 text-sm mt-1">
-            {clientErrors.email ? clientErrors.email[0] : state?.errors?.email?.[0]}
+            {clientErrors.email
+              ? clientErrors.email[0]
+              : state?.errors?.email?.[0]}
           </p>
         )}
       </div>
@@ -82,7 +87,9 @@ export default function LoginForm() {
         />
         {(clientErrors.password || state?.errors?.password) && (
           <p className="text-red-500 text-sm mt-1">
-            {clientErrors.password ? clientErrors.password[0] : state?.errors?.password?.[0]}
+            {clientErrors.password
+              ? clientErrors.password[0]
+              : state?.errors?.password?.[0]}
           </p>
         )}
       </div>

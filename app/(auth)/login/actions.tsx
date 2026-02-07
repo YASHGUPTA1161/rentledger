@@ -4,6 +4,7 @@ import db from "@/lib/prisma";
 import { cookies } from "next/headers";
 import bcrypt from "bcrypt";
 import { FormState, LoginFormSchema } from "@/app/lib/definitions";
+import * as jose from "jose";
 
 export async function loginAction(formData: FormData): Promise<FormState> {
   const validationResult = LoginFormSchema.safeParse({
@@ -31,10 +32,24 @@ export async function loginAction(formData: FormData): Promise<FormState> {
         fieldValues: { email, password: "" },
       };
     }
-    (await cookies()).set("session", String(user.id), {
+
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: "user",
+    };
+
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const token = await new jose.SignJWT(payload)
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("2h") // Match this with route.ts
+      .sign(secret);
+    // Now store the JWT token (not user.id)
+    (await cookies()).set("session", token, {
       httpOnly: true,
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 2, // 2 hours (match JWT expiry)
     });
 
     return { message: "Login successful" };
