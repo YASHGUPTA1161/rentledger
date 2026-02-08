@@ -143,7 +143,7 @@ model Property {
   id           String   @id @default(uuid())
   landlordId   String
   address      String
-  propertyType String
+  // propertyType String
   description  String?
   createdAt    DateTime @default(now())
 
