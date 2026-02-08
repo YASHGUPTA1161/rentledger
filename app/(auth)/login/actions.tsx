@@ -34,10 +34,25 @@ export async function loginAction(formData: FormData): Promise<FormState> {
       };
     }
 
+    const userRole = await db.userRole.findFirst({
+      where: { userId: user.id },
+      include: { landlord: true },
+    });
+
+    if (!userRole) {
+      return {
+        errors: {
+          email: ["User role not found. Please contact support."],
+        },
+        fieldValues: { email, password: "" },
+      };
+    }
+
     const payload = {
       userId: user.id,
       email: user.email,
-      role: "user",
+      role: userRole.role,
+      landlordId: userRole.landlordId,
     };
 
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -49,11 +64,10 @@ export async function loginAction(formData: FormData): Promise<FormState> {
     // Now store the JWT token (not user.id)
     (await cookies()).set("session", token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 60 * 60 * 2, // 2 hours (match JWT expiry)
     });
-
-    redirect("/dashboard");
   } catch (error) {
     console.error("Login error: ", error);
     return {
@@ -61,4 +75,5 @@ export async function loginAction(formData: FormData): Promise<FormState> {
       fieldValues: { email, password: "" },
     };
   }
+  redirect("/dashboard");
 }
