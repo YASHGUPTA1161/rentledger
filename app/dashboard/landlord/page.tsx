@@ -1,4 +1,5 @@
 import { createProperty } from "./actions";
+import { PropertyList } from "./PropertyList";
 import db from "@/lib/prisma";
 import { cookies } from "next/headers";
 import * as jose from "jose";
@@ -24,29 +25,7 @@ export default async function LandlordDashboard() {
       {properties.length === 0 ? (
         <p>No Properties yet. Add one below!</p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {properties.map((property) => (
-            <li
-              key={property.id}
-              style={{
-                marginBottom: "1rem",
-                padding: "1rem",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-              }}
-            >
-              <strong>📍 {property.address}</strong>
-              {property.description && (
-                <p style={{ margin: "0.5rem 0 0 0", color: "#666" }}>
-                  {property.description}
-                </p>
-              )}
-              <small style={{ color: "#999" }}>
-                Added: {new Date(property.createdAt).toLocaleDateString()}
-              </small>
-            </li>
-          ))}
-        </ul>
+        <PropertyList properties={properties} />
       )}
       {/* Add Property Form */}
 

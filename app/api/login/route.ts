@@ -21,11 +21,11 @@ export async function POST(request: Request) {
     if (!validation.success) {
       // NextResponse.json() creates a structured HTTP response
       return NextResponse.json(
-        { 
-          error: "Validation failed", 
-          details: validation.error.flatten().fieldErrors 
+        {
+          error: "Validation failed",
+          details: validation.error.flatten().fieldErrors,
         },
-        { status: 400 } // 400 = Bad Request (Client's fault)
+        { status: 400 }, // 400 = Bad Request (Client's fault)
       );
     }
 
@@ -47,23 +47,23 @@ export async function POST(request: Request) {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return NextResponse.json(
         { error: "Invalid email or password" },
-        { status: 401 } // 401 = Unauthorized
+        { status: 401 }, // 401 = Unauthorized
       );
     }
-     // 1. Prepare the Payload (What's inside the wristband)
+    // 1. Prepare the Payload (What's inside the wristband)
     const payload = {
       userId: user.id,
       email: user.email,
-      role: "user" // Optional
+      role: "user", // Optional
     };
     // 2. Prepare the Secret (Convert string to Bytes)
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     // 3. Sign it! (The Magic)
     const token = await new jose.SignJWT(payload)
       .setProtectedHeader({ alg: "HS256" }) // Use Standard Algorithm
-      .setIssuedAt()                         // "Created Now"
-      .setExpirationTime("2h")               // "Valid for 2 hours"
-      .sign(secret); 
+      .setIssuedAt() // "Created Now"
+      .setExpirationTime("2h") // "Valid for 2 hours"
+      .sign(secret);
 
     // ---------------------------------------------------------
     // 5. RESPOND: Success!
@@ -75,11 +75,10 @@ export async function POST(request: Request) {
         success: true,
         message: "Logged in successfully",
         user: { id: user.id, name: user.name, email: user.email },
-        token
+        token,
       },
-      { status: 200 } // 200 = OK
+      { status: 200 }, // 200 = OK
     );
-
   } catch (error) {
     console.error("API Error:", error);
     // ---------------------------------------------------------
@@ -87,7 +86,7 @@ export async function POST(request: Request) {
     // ---------------------------------------------------------
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 } // 500 = Server's fault
+      { status: 500 }, // 500 = Server's fault
     );
   }
 }
