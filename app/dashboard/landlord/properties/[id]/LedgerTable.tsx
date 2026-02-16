@@ -543,182 +543,193 @@ function EntryRow({
    *   User sees input fields with current values
    */
   if (isEditing) {
+    // Manual save handler - collects data without form element
+    const handleSave = () => {
+      const formData = new FormData();
+
+      // Add entry ID and bill ID
+      formData.append("entryId", entry.id);
+      formData.append("billId", entry.billId);
+
+      // Collect all input values by name
+      const row = document.getElementById(`edit-row-${entry.id}`);
+      if (!row) return;
+
+      const inputs = row.querySelectorAll("input, select");
+      inputs.forEach((input) => {
+        if (
+          input instanceof HTMLInputElement ||
+          input instanceof HTMLSelectElement
+        ) {
+          if (input.name && input.value) {
+            formData.append(input.name, input.value);
+          }
+        }
+      });
+
+      onSaveEdit(formData);
+    };
+
     return (
-      <tr className="editing-row">
+      <tr className="editing-row" id={`edit-row-${entry.id}`}>
+        {/* Checkbox column */}
         {isLandlord && <td>-</td>}
 
-        {/* Editable form wrapped in hidden form element */}
-        <td colSpan={14}>
-          <form
-            id={`edit-form-${entry.id}`}
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              onSaveEdit(formData);
-            }}
-            style={{ display: "contents" }} // Make form invisible, just wraps inputs
-          >
-            {/* Hidden field: Entry ID (needed by server action) */}
-            <input type="hidden" name="entryId" value={entry.id} />
-            <input type="hidden" name="billId" value={entry.billId} />
-
-            {/* Date Input */}
-            <td>
-              <input
-                type="date"
-                name="entryDate"
-                defaultValue={entry.entryDate.split("T")[0]}
-                className="ledger-table-input"
-                required
-              />
-            </td>
-
-            {/* Description Input */}
-            <td>
-              <input
-                type="text"
-                name="description"
-                defaultValue={entry.description}
-                className="ledger-table-input"
-                required
-              />
-            </td>
-
-            {/* Current Meter Reading */}
-            <td>
-              <input
-                type="number"
-                name="electricityCurrentReading"
-                defaultValue={entry.electricityCurrentReading || ""}
-                placeholder="0"
-                className="ledger-table-input"
-              />
-            </td>
-
-            {/* Electricity Rate */}
-            <td>
-              <input
-                type="number"
-                name="electricityRate"
-                defaultValue={entry.electricityRate || ""}
-                step="0.01"
-                placeholder="₹0"
-                className="ledger-table-input"
-              />
-            </td>
-
-            {/* Units (read-only, auto-calculated) */}
-            <td>{entry.electricityUnitsConsumed || "-"}</td>
-
-            {/* Elec Total (read-only, auto-calculated) */}
-            <td>
-              {entry.electricityTotal
-                ? `₹${entry.electricityTotal.toLocaleString()}`
-                : "-"}
-            </td>
-
-            {/* Water Bill */}
-            <td>
-              <input
-                type="number"
-                name="waterBill"
-                defaultValue={entry.waterBill || ""}
-                step="0.01"
-                placeholder="₹0"
-                className="ledger-table-input"
-              />
-            </td>
-
-            {/* Rent Amount */}
-            <td>
-              <input
-                type="number"
-                name="rentAmount"
-                defaultValue={entry.rentAmount || ""}
-                step="0.01"
-                placeholder="₹0"
-                className="ledger-table-input"
-              />
-            </td>
-
-            {/* Debit Amount */}
-            <td>
-              <input
-                type="number"
-                name="debitAmount"
-                defaultValue={entry.debitAmount || ""}
-                step="0.01"
-                placeholder="₹0"
-                className="ledger-table-input"
-              />
-            </td>
-
-            {/* Credit Amount */}
-            <td>
-              <input
-                type="number"
-                name="creditAmount"
-                defaultValue={entry.creditAmount || ""}
-                step="0.01"
-                placeholder="₹0"
-                className="ledger-table-input"
-              />
-            </td>
-
-            {/* Payment Method Dropdown */}
-            <td>
-              <select
-                name="paymentMethod"
-                defaultValue={entry.paymentMethod || ""}
-                className="ledger-table-input"
-              >
-                <option value="">-</option>
-                <option value="UPI">UPI</option>
-                <option value="CASH">Cash</option>
-                <option value="BANK_TRANSFER">Bank Transfer</option>
-              </select>
-            </td>
-
-            {/* Proof (read-only in this phase, Phase 2 will add upload) */}
-            <td>
-              {entry.paymentProof ? (
-                <a
-                  href={entry.paymentProof}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  📷 View
-                </a>
-              ) : (
-                "-"
-              )}
-            </td>
-
-            {/* Verified Status (always read-only) */}
-            <td>{isVerified ? "✓ Verified" : "-"}</td>
-
-            {/* Action Buttons: Save & Cancel */}
-            {isLandlord && (
-              <td>
-                <button
-                  type="submit"
-                  form={`edit-form-${entry.id}`}
-                  className="ledger-save-button"
-                  style={{ marginRight: "4px" }}
-                >
-                  ✅ Save
-                </button>
-                <button
-                  type="button"
-                  onClick={onCancelEdit}
-                  className="ledger-cancel-button"
-                >
-                  ❌ Cancel
-                </button>
-              </td>
-            )}
-          </form>
+        {/* Date Input */}
+        <td>
+          <input
+            type="date"
+            name="entryDate"
+            defaultValue={entry.entryDate.split("T")[0]}
+            className="ledger-table-input"
+            required
+          />
         </td>
+
+        {/* Description Input */}
+        <td>
+          <input
+            type="text"
+            name="description"
+            defaultValue={entry.description}
+            className="ledger-table-input"
+            required
+          />
+        </td>
+
+        {/* Current Meter Reading */}
+        <td>
+          <input
+            type="number"
+            name="electricityCurrentReading"
+            defaultValue={entry.electricityCurrentReading || ""}
+            placeholder="0"
+            className="ledger-table-input"
+          />
+        </td>
+
+        {/* Electricity Rate */}
+        <td>
+          <input
+            type="number"
+            name="electricityRate"
+            defaultValue={entry.electricityRate || ""}
+            step="0.01"
+            placeholder="₹0"
+            className="ledger-table-input"
+          />
+        </td>
+
+        {/* Units (read-only) */}
+        <td>{entry.electricityUnitsConsumed || "-"}</td>
+
+        {/* Elec Total (read-only) */}
+        <td>
+          {entry.electricityTotal
+            ? `₹${entry.electricityTotal.toLocaleString()}`
+            : "-"}
+        </td>
+
+        {/* Water Bill */}
+        <td>
+          <input
+            type="number"
+            name="waterBill"
+            defaultValue={entry.waterBill || ""}
+            step="0.01"
+            placeholder="₹0"
+            className="ledger-table-input"
+          />
+        </td>
+
+        {/* Rent Amount */}
+        <td>
+          <input
+            type="number"
+            name="rentAmount"
+            defaultValue={entry.rentAmount || ""}
+            step="0.01"
+            placeholder="₹0"
+            className="ledger-table-input"
+          />
+        </td>
+
+        {/* Debit Amount */}
+        <td>
+          <input
+            type="number"
+            name="debitAmount"
+            defaultValue={entry.debitAmount || ""}
+            step="0.01"
+            placeholder="₹0"
+            className="ledger-table-input"
+          />
+        </td>
+
+        {/* Credit Amount */}
+        <td>
+          <input
+            type="number"
+            name="creditAmount"
+            defaultValue={entry.creditAmount || ""}
+            step="0.01"
+            placeholder="₹0"
+            className="ledger-table-input"
+          />
+        </td>
+
+        {/* Payment Method Dropdown */}
+        <td>
+          <select
+            name="paymentMethod"
+            defaultValue={entry.paymentMethod || ""}
+            className="ledger-table-input"
+          >
+            <option value="">-</option>
+            <option value="UPI">UPI</option>
+            <option value="CASH">Cash</option>
+            <option value="BANK_TRANSFER">Bank Transfer</option>
+          </select>
+        </td>
+
+        {/* Proof (read-only) */}
+        <td>
+          {entry.paymentProof ? (
+            <a
+              href={entry.paymentProof}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              📷 View
+            </a>
+          ) : (
+            "-"
+          )}
+        </td>
+
+        {/* Verified Status */}
+        <td>{isVerified ? "✓ Verified" : "-"}</td>
+
+        {/* Action Buttons */}
+        {isLandlord && (
+          <td>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="ledger-save-button"
+              style={{ marginRight: "4px" }}
+            >
+              ✅ Save
+            </button>
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="ledger-cancel-button"
+            >
+              ❌ Cancel
+            </button>
+          </td>
+        )}
       </tr>
     );
   }
