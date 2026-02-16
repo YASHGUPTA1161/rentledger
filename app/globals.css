@@ -24,3 +24,278 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ========================================
+   CSS RESET & BASE STYLES
+   ======================================== */
+
+/* Universal reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  padding: 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+h4,
+h5,
+h6 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Paragraphs */
+p {
+  margin: 0 0 1rem 0;
+  line-height: 1.6;
+}
+
+/* Lists */
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style-position: inside;
+}
+
+li {
+  margin-bottom: 0.5rem;
+}
+
+/* Links */
+a {
+  color: #007bff;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+/* Buttons */
+button {
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Form elements */
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  font-weight: 600;
+  background-color: #f8f9fa;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ========================================
+   LEDGER TABLE DARK THEME STYLES
+   ======================================== */
+
+.ledger-table-container {
+  padding: 1rem;
+  background: #fff !important;
+  color: #000 !important;
+}
+
+.ledger-table-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.ledger-table-header h2 {
+  color: #000 !important;
+  margin: 0;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff !important;
+  border: 1px solid #ddd;
+}
+
+.ledger-table thead tr {
+  background: #f0f0f0 !important;
+}
+
+.ledger-table th {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 2px solid #333;
+  font-weight: bold;
+  color: #000 !important;
+}
+
+.ledger-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #ddd;
+  color: #000 !important;
+}
+
+.ledger-table tbody tr {
+  background: #fff !important;
+}
+
+.ledger-table tbody tr.verified-row {
+  background: #e8f5e9 !important;
+  opacity: 1;
+}
+
+.ledger-table tbody tr.new-entry-row {
+  background: #f1f8e9 !important;
+}
+
+.ledger-table tbody tr.totals-row {
+  border-top: 2px solid #333;
+  background: #f5f5f5 !important;
+  font-weight: bold;
+}
+
+.ledger-table-input {
+  background: #fff !important;
+  color: #000 !important;
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.ledger-table-input:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+.ledger-add-button {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ledger-add-button:hover {
+  background: #45a049;
+}
+
+.ledger-save-button {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.ledger-cancel-button {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+
+.ledger-delete-button {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.ledger-proof-link {
+  color: #4caf50;
+  text-decoration: none;
+}
+
+.ledger-proof-link:hover {
+  text-decoration: underline;
+}
