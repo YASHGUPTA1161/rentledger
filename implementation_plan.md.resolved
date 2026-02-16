@@ -1,0 +1,597 @@
+# 🏗️ Role-Based Dashboard Blueprint
+
+## The Big Picture
+
+Build a system where:
+- **Landlords** create tenant accounts (like college admin creating student profiles)
+- **Each user** has ONE role only (landlord OR tenant, never both)
+- **After login**, users land on their role-specific dashboard
+- **Landlords** see all their properties + tenants
+- **Tenants** see their bills + lease info (ONLY their own data)
+
+---
+
+## 🎯 Core Components Overview
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                        RENTLEDGER SYSTEM                             │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌─────────────┐         ┌──────────────┐                          │
+│  │   SIGNUP    │────────►│  CREATE USER │                          │
+│  │  (Landlord) │         │   + ROLE     │                          │
+│  └─────────────┘         └──────────────┘                          │
+│                                 │                                    │
+│                                 ▼                                    │
+│                    ┌─────────────────────┐                          │
+│                    │  JWT with Role Info │                          │
+│                    └─────────────────────┘                          │
+│                                 │                                    │
+│                                 ▼                                    │
+│                         ┌──────────────┐                            │
+│                         │  MIDDLEWARE  │                            │
+│                         │   (Bouncer)  │                            │
+│                         └──────────────┘                            │
+│                                 │                                    │
+│            ┌────────────────────┼────────────────────┐              │
+│            ▼                    ▼                     ▼              │
+│  ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐   │
+│  │    LANDLORD      │ │     TENANT       │ │     ADMIN        │   │
+│  │   DASHBOARD      │ │    DASHBOARD     │ │   DASHBOARD      │   │
+│  │                  │ │                  │ │  (God Mode 👑)   │   │
+│  └──────────────────┘ └──────────────────┘ └──────────────────┘   │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📋 What Needs to Happen (Step by Step)
+
+### Step 1: Signup Creates Role
+
+**Current state:** Signup creates User, nothing else
+
+**What to add:**
+1. Add role picker to signup form (radio buttons: Landlord / Tenant)
+2. When user submits, check their role choice
+3. If role = "landlord":
+   - Create User record
+   - Create Landlord record (linked to User)
+   - Create UserRole record (says "this user is a landlord")
+4. If role = "tenant":
+   - DON'T create during signup (landlord will create them later)
+   - Show message: "Tenants are created by landlords"
+
+**Why:** Sets up the identity foundation
+
+---
+
+### Step 2: Login Fetches Role and Packs JWT
+
+**Current state:** Login creates JWT with just userId and email
+
+**What to add:**
+1. After user logs in successfully, look up their UserRole
+2. If landlord, also fetch their Landlord record to get landlordId
+3. If tenant, fetch their Tenant record to get landlordId AND tenantId
+4. Put everything in the JWT:
+   - userId (who you are)
+   - email (your login)
+   - role (landlord/tenant/admin)
+   - landlordId (which landlord you belong to)
+   - tenantId (if you're a tenant, your specific ID)
+
+**Why:** JWT becomes the "all-access pass" with full identity info
+
+---
+
+### Step 3: Middleware Becomes Smart Bouncer
+
+**Current state:** Middleware just checks "do you have a valid token?"
+
+**What to add:**
+1. Decode the JWT to read the role
+2. Check the URL the user is trying to visit
+3. Apply these rules:
+   - Anyone hits `/dashboard` → redirect to their role-specific dashboard
+   - Landlord hits `/dashboard/landlord` → ALLOW
+   - Landlord hits `/dashboard/tenant` → BLOCK (redirect away)
+   - Tenant hits `/dashboard/tenant` → ALLOW
+   - Tenant hits `/dashboard/landlord` → BLOCK (redirect away)
+4. Set headers so the dashboard pages know who you are
+
+**Why:** Prevents wrong people from seeing wrong dashboards
+
+---
+
+### Step 4: Create Landlord Dashboard
+
+**What it shows:**
+- List of all properties the landlord owns
+- For each property, who's living there (active tenants)
+- Bills that are overdue
+- Total rent collected this month
+- Quick stats (total properties, total tenants, etc.)
+
+**How it gets data:**
+- Read landlordId from request headers (middleware put it there)
+- Query database for properties WHERE landlordId = this landlord
+- Query database for tenants WHERE landlordId = this landlord
+- Query database for bills WHERE landlordId = this landlord
+
+**Critical rule:** ALWAYS filter by landlordId or you'll show other landlords' data
+
+---
+
+### Step 5: Create Tenant Dashboard
+
+**What it shows:**
+- Current lease info (which property, lease start/end dates)
+- Unpaid bills (rent, utilities)
+- Bill history (past 6 months)
+- Landlord contact info
+- Place to upload documents
+- Maintenance requests
+
+**How it gets data:**
+- Read tenantId from request headers
+- Query database for tenancy WHERE tenantId = this tenant AND status = active
+- Query database for bills WHERE tenantId = this tenant
+- Query database for maintenance requests WHERE tenantId = this tenant
+
+**Critical rule:** ALWAYS filter by tenantId or tenant could see other tenants' bills
+
+---
+
+### Step 6: Create Admin Dashboard (God Mode 👑)
+
+**What it shows:**
+- Total system statistics (all landlords, all tenants, all properties)
+- All landlords in the system
+- All tenants across all landlords
+- Platform-wide revenue stats
+- User management (approve/suspend accounts)
+- System health monitoring
+- Data integrity checks
+
+**How it gets data:**
+- NO filtering by landlordId (admin sees EVERYTHING)
+- Query ALL properties, ALL tenants, ALL bills
+- Aggregated stats across entire platform
+
+**Special powers:**
+- Can log in as any user (impersonate)
+- Can create/delete landlords
+- Can reassign tenants to different landlords
+- Can override any data
+
+**Critical rule:** Admin role is ONLY for you, never exposed to regular users
+
+---
+
+## 🔄 Complete Flow Diagrams
+
+### Landlord Signup Flow
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    LANDLORD SIGNUP                           │
+└──────────────────────────────────────────────────────────────┘
+
+User opens /signup
+        │
+        ▼
+User fills form:
+  - Name: "John"
+  - Email: "john@landlord.com"
+  - Password: "SecurePass123!"
+  - [x] Landlord  ← picks this role
+  - [ ] Tenant
+        │
+        ▼
+User clicks "Sign Up"
+        │
+        ▼
+Backend validates form
+        │
+        ▼
+Create User in database
+  (User table gets new row)
+        │
+        ▼
+Role = "landlord" → Create Landlord record
+  (Landlord table gets new row, linked to User)
+        │
+        ▼
+Create UserRole record
+  (UserRole table: links User to "landlord" role)
+        │
+        ▼
+Generate JWT containing:
+  {
+    userId: "abc123",
+    email: "john@landlord.com",
+    role: "landlord",
+    landlordId: "xyz789",
+    tenantId: null
+  }
+        │
+        ▼
+Save JWT as cookie (httpOnly, secure)
+        │
+        ▼
+Redirect to /dashboard
+        │
+        ▼
+Middleware sees /dashboard, reads JWT
+        │
+        ▼
+JWT says role = "landlord"
+        │
+        ▼
+Middleware redirects to /dashboard/landlord
+        │
+        ▼
+Landlord dashboard loads
+```
+
+---
+
+### Login Flow (Any User)
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                      LOGIN FLOW                              │
+└──────────────────────────────────────────────────────────────┘
+
+User opens /login
+        │
+        ▼
+User enters email + password
+        │
+        ▼
+Backend checks credentials
+        │
+        ├─────────────┬─────────────┐
+        │             │             │
+    VALID         INVALID      (return error)
+        │
+        ▼
+Find User in database
+        │
+        ▼
+Look up UserRole for this User
+        │
+        ├─────────────┬─────────────┐
+        │             │             │
+   role=landlord  role=tenant
+        │             │
+        ▼             ▼
+  Get Landlord    Get Tenant
+     record          record
+  (get landlordId) (get landlordId
+        │          + tenantId)
+        │             │
+        └─────────────┴─────────────┘
+                      │
+                      ▼
+        Generate JWT with full context
+        (userId, email, role, landlordId, tenantId)
+                      │
+                      ▼
+             Set JWT as cookie
+                      │
+                      ▼
+          Redirect to /dashboard
+                      │
+                      ▼
+        Middleware intercepts request
+                      │
+        ┌─────────────┴─────────────┐
+        │                           │
+   role=landlord              role=tenant
+        │                           │
+        ▼                           ▼
+  /dashboard/landlord       /dashboard/tenant
+```
+
+---
+
+### Middleware Protection Flow
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│              MIDDLEWARE (The Bouncer)                        │
+└──────────────────────────────────────────────────────────────┘
+
+Request comes in: GET /dashboard/landlord
+                      │
+                      ▼
+        Check for "session" cookie
+                      │
+        ┌─────────────┴─────────────┐
+        │                           │
+   NO COOKIE                   HAS COOKIE
+        │                           │
+        ▼                           ▼
+  Redirect to               Decode JWT
+    /login                         │
+                                   ▼
+                        Extract role from JWT
+                                   │
+                        ┌──────────┴──────────┐
+                        │                     │
+                   role=landlord         role=tenant
+                        │                     │
+                        ▼                     ▼
+          Trying /dashboard/landlord  Trying /dashboard/landlord
+                        │                     │
+                   ✅ ALLOW              ❌ BLOCK
+                        │                     │
+                        ▼                     ▼
+                Set headers:           Redirect to
+                x-user-id             /dashboard/tenant
+                x-landlord-id
+                        │
+                        ▼
+                 Page renders
+```
+
+---
+
+### Data Access Patterns
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│            LANDLORD DASHBOARD DATA FETCHING                  │
+└──────────────────────────────────────────────────────────────┘
+
+Landlord dashboard page loads
+        │
+        ▼
+Read landlordId from request headers
+(middleware already put it there)
+        │
+        ▼
+Fetch Properties:
+  Query: WHERE landlordId = <this landlord>
+        │
+        ▼
+Fetch Tenants:
+  Query: WHERE landlordId = <this landlord>
+        │
+        ▼
+Fetch Bills:
+  Query: WHERE landlordId = <this landlord>
+        │
+        ▼
+Render dashboard with data
+
+
+┌──────────────────────────────────────────────────────────────┐
+│             TENANT DASHBOARD DATA FETCHING                   │
+└──────────────────────────────────────────────────────────────┘
+
+Tenant dashboard page loads
+        │
+        ▼
+Read tenantId from request headers
+        │
+        ▼
+Fetch Active Tenancy:
+  Query: WHERE tenantId = <this tenant> AND status = 'active'
+        │
+        ▼
+Fetch Bills:
+  Query: WHERE tenantId = <this tenant>
+        │
+        ▼
+Fetch Maintenance Requests:
+  Query: WHERE tenantId = <this tenant>
+        │
+        ▼
+Render dashboard with data
+```
+
+---
+
+## 🛡️ Security Rules (Multi-Tenant Isolation)
+
+### The Golden Rule
+**Every database query MUST filter by landlordId or tenantId**
+
+### Why This Matters
+
+```
+WITHOUT FILTERING:
+Landlord A logs in → sees ALL properties from ALL landlords ❌
+
+WITH FILTERING:
+Landlord A logs in → sees ONLY properties where landlordId = A ✅
+```
+
+### Real-World Analogy
+Think of it like apartment key cards:
+- Your key card ONLY opens YOUR apartments
+- Not your neighbor's apartments
+- Not other landlords' buildings
+
+The `landlordId` filter is your key card check.
+
+---
+
+## 📁 File Organization
+
+### Files That Need Changes
+
+```
+d:\rentledger\
+├── app\
+│   ├── (auth)\
+│   │   └── signup\
+│   │       ├── page.tsx        ← Add role picker UI
+│   │       └── actions.ts      ← Add Landlord creation logic
+│   ├── api\
+│   │   └── login\
+│   │       └── route.ts        ← Add role fetching + JWT update
+│   ├── dashboard\
+│   │   ├── landlord\
+│   │   │   └── page.tsx        ← CREATE: Shows properties/tenants
+│   │   ├── tenant\
+│   │   │   └── page.tsx        ← CREATE: Shows bills/lease
+│   │   └── admin\
+│   │       └── page.tsx        ← CREATE: God mode dashboard
+│   ├── middleware.ts           ← Add role-based redirects
+│   └── lib\
+│       └── definitions.ts      ← Add role to form schema
+└── lib\
+    └── auth.ts                 ← CREATE: Helper functions
+```
+
+---
+
+## 🎯 Implementation Order
+
+Build in this sequence (each builds on previous):
+
+### Phase 1: Foundation
+1. Add role picker to signup form (UI only, no logic yet)
+2. Update form schema to validate role field
+3. Update signup action to create Landlord record when role = landlord
+
+### Phase 2: Auth Layer
+4. Create auth helper file with utility functions
+5. Update login to fetch UserRole and add to JWT
+6. Update middleware to read role from JWT
+
+### Phase 3: Routing
+7. Add role-based redirect logic to middleware
+8. Test: landlord signup → should redirect to /dashboard/landlord
+
+### Phase 4: Dashboards
+9. Create landlord dashboard page (empty at first)
+10. Add data fetching for properties/tenants (filtered by landlordId)
+11. Create tenant dashboard page (empty at first)
+12. Add data fetching for bills/lease (filtered by tenantId)
+
+### Phase 5: UI Polish
+13. Add actual UI components to dashboards
+14. Test data isolation (landlord A can't see landlord B's data)
+
+---
+
+## ✅ Testing Checklist
+
+### Test 1: Signup as Landlord
+- [ ] Can pick "Landlord" role during signup
+- [ ] After signup, User + Landlord + UserRole records exist in DB
+- [ ] Automatically redirected to /dashboard/landlord
+- [ ] JWT contains role="landlord" and landlordId
+
+### Test 2: Login as Landlord
+- [ ] Login with landlord credentials
+- [ ] Redirected to /dashboard/landlord
+- [ ] Dashboard shows "Landlord Dashboard" heading
+- [ ] Can see properties (once you create some)
+
+### Test 3: Role-Based Blocking
+- [ ] Login as landlord
+- [ ] Try to manually visit /dashboard/tenant
+- [ ] Should be blocked/redirected
+- [ ] (Repeat vice-versa with tenant)
+
+### Test 4: Data Isolation
+- [ ] Create 2 landlord accounts
+- [ ] Landlord A creates a property
+- [ ] Login as Landlord B
+- [ ] Landlord B should NOT see Landlord A's property
+
+---
+
+## 🎓 Concept Explanations
+
+### What is JWT and Why Do We Use It?
+
+**JWT = Digital Wristband**
+
+When you go to a concert:
+1. You buy a ticket (login)
+2. Security puts a wristband on you (JWT)
+3. Wristband says: "VIP" or "General Admission" (role)
+4. Every time you enter a restricted area, security checks your wristband
+
+JWT works the same way:
+- Login = get wristband
+- JWT contains your role
+- Every page checks your JWT to see if you're allowed in
+
+### Why Middleware?
+
+**Middleware = Security Guard at Every Door**
+
+Instead of checking credentials inside every room (page):
+- Check once at the entrance (middleware)
+- If allowed, stamp your hand (set headers)
+- All rooms can see your stamp (read headers)
+
+This is faster and more secure.
+
+### Why Separate Dashboards?
+
+**Landlord vs Tenant = Completely Different Jobs**
+
+Landlord needs:
+- Bird's eye view of ALL properties
+- Manage multiple tenants
+- Generate bills
+
+Tenant needs:
+- See ONLY their own stuff
+- Pay bills
+- Contact landlord
+
+Same app, totally different workflows → separate dashboards.
+
+---
+
+## 🚧 Common Gotchas
+
+### Gotcha 1: Forgetting to Filter by landlordId
+**Problem:** Query returns ALL properties from ALL landlords
+
+**Fix:** Always add `WHERE landlordId = ...` to queries
+
+### Gotcha 2: JWT Doesn't Update After Role Change
+**Problem:** User's role changes in DB but JWT still has old role
+
+**Fix:** User needs to logout and login again to get new JWT
+
+### Gotcha 3: Middleware Redirects Too Early
+**Problem:** User can't access login page because middleware redirects them
+
+**Fix:** Exclude /login and /signup from middleware matcher
+
+### Gotcha 4: Tenant Can't Sign Up
+**Expected:** Tenants are created by landlords, not self-signup
+
+**Fix:** Show message on signup: "Are you a tenant? Contact your landlord"
+
+---
+
+## 🎯 Success Criteria
+
+You'll know it's working when:
+
+✅ Landlord signs up → automatically on landlord dashboard
+✅ Tenant account exists → can login → sees tenant dashboard
+✅ Landlord can't access tenant dashboard (and vice versa)
+✅ Landlord A can't see Landlord B's properties
+✅ Tenant can only see their own bills
+✅ JWT contains correct role information
+✅ No code in the codebase queries without landlordId/tenantId filter
+
+---
+
+That's the complete blueprint. No code, just concepts and flow. Build this room by room! 🏗️

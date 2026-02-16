@@ -69,8 +69,9 @@ enum ReminderStatus {
 
 model User {
   id        String   @id @default(uuid())
+  name      String?
   email     String   @unique
-  password  String
+  password  String? //made it optional for now 
   createdAt DateTime @default(now())
 
   landlord Landlord?
@@ -98,7 +99,7 @@ model Landlord {
   id           String   @id @default(uuid())
   userId       String   @unique
   name         String
-  contactPhone String
+  contactPhone String?
   createdAt    DateTime @default(now())
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -142,16 +143,15 @@ model Property {
   id           String   @id @default(uuid())
   landlordId   String
   address      String
-  propertyType String
   description  String?
+  status       String   @default("VACANT")  // ← ADD THIS LINE
   createdAt    DateTime @default(now())
-
+  
   landlord            Landlord             @relation(fields: [landlordId], references: [id])
   tenancies           Tenancy[]
   bills               Bill[]
   maintenanceRequests MaintenanceRequest[]
-
-  @@index([landlordId])
+  activityLogs        ActivityLog[]        // ← ADD THIS LINE
 }
 
 model Tenancy {
@@ -161,18 +161,19 @@ model Tenancy {
   propertyId String
 
   leaseStart DateTime
-  leaseEnd   DateTime
+  leaseEnd   DateTime?
   status     LeaseStatus
-
+  
+  monthlyRent     Decimal @db.Decimal(10, 2)  // ← ADD THIS LINE
   securityDeposit Decimal @db.Decimal(10, 2)
   currency        String  @default("USD")
 
   createdAt DateTime  @default(now())
   endedAt   DateTime?
-
+  
   landlord Landlord @relation(fields: [landlordId], references: [id])
   tenant   Tenant   @relation(fields: [tenantId], references: [id])
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   bills     Bill[]
   documents Document[]
@@ -189,32 +190,144 @@ model Bill {
   tenantId   String
   propertyId String
 
-  billType    BillType
-  periodStart DateTime
-  periodEnd   DateTime
-  dueDate     DateTime
+  // Billing Period
+  month           DateTime
+  dueDate         DateTime
 
-  amount   Decimal       @db.Decimal(10, 2)
-  currency String        @default("USD")
+  // Charges
+  rent            Decimal  @db.Decimal(10, 2)
+  
+  electricityUnits Int?
+  electricityRate  Decimal? @db.Decimal(10, 2)
+  electricityTotal Decimal? @db.Decimal(10, 2)
+  
+  waterBill       Decimal? @db.Decimal(10, 2)
+  carryForward    Decimal  @default(0) @db.Decimal(10, 2)
+  
+  // Totals
+  totalBill       Decimal  @db.Decimal(10, 2)
+  paidAmount      Decimal  @default(0) @db.Decimal(10, 2)
+  remainingAmount Decimal  @db.Decimal(10, 2)
+  
+  // Status
   status   PaymentStatus
-
-  paidAt    DateTime?
-  createdAt DateTime  @default(now())
+  
+  // Notes
+  note     String?  @db.Text
+  
+  currency String   @default("INR")
+  
+  // Edit tracking
+  isEdited    Boolean   @default(false)
+  editedAt    DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   paymentReminders PaymentReminder[]
 
   landlord Landlord @relation(fields: [landlordId], references: [id])
-  tenancy  Tenancy  @relation(fields: [tenancyId], references: [id])
+  tenancy  Tenancy  @relation(fields: [tenancyId], references: [id], onDelete: Cascade)
   tenant   Tenant   @relation(fields: [tenantId], references: [id])
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   documents Document[]
+  payments  Payment[]
+
+  ledgerEntries   LedgerEntry[]
 
   @@index([landlordId])
   @@index([tenancyId])
   @@index([tenantId])
   @@index([propertyId])
+  @@index([month])
+  @@unique([tenancyId, month])
 }
+model Payment {
+  id              String   @id @default(uuid())
+  
+  // Bill Link
+  billId          String
+  bill            Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  
+  // Payment Details
+  amount          Decimal  @db.Decimal(10, 2)
+  
+  // Dates
+  paidAt          DateTime
+  confirmedAt     DateTime?
+  
+  // Proof
+  paymentProof    String?
+  paymentMethod   String?
+  
+  // Verification (tenant confirms payment)
+  verifiedByTenant    Boolean   @default(false)
+  verifiedAt          DateTime?
+  
+  // Correction tracking
+  isCorrection        Boolean   @default(false)
+  correctionReason    String?
+  originalPaymentId   String?
+  
+  // Notes
+  note            String?   @db.Text
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  
+  @@index([billId])
+  @@index([paidAt])
+}
+
+model LedgerEntry {
+  id String @id @default(uuid())
+  billId String
+  
+  entryDate DateTime
+  // ❌ REMOVE: entryType String  (no longer needed)
+  
+  description String
+  
+  // ✅ NEW: Meter reading fields
+  electricityPreviousReading Int?  // Auto-filled from last bill
+  electricityCurrentReading Int?   // User enters
+  electricityUnitsConsumed Int?    // Auto-calculated
+  electricityRate Decimal? @db.Decimal(10,2)
+  electricityTotal Decimal? @db.Decimal(10,2)  // Auto-calculated
+  
+  // ✅ CHANGE: Make optional
+  waterBill Decimal? @db.Decimal(10,2)
+  rentAmount Decimal? @db.Decimal(10,2)
+  
+  // Generic amounts
+  debitAmount Decimal? @db.Decimal(10,2)
+  creditAmount Decimal? @db.Decimal(10,2)
+  
+  // Payment details (all optional)
+  paymentMethod String?
+  paymentProof String?
+  
+  // Verification
+  verifiedByTenant Boolean @default(false)
+  verifiedAt DateTime?
+  
+  // Edit tracking
+  isEdited Boolean @default(false)
+  editedAt DateTime?
+  
+  // Metadata
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  
+  @@index([billId])
+  @@index([entryDate])
+}
+
+
 
 model Document {
   id           String       @id @default(uuid())
@@ -292,4 +405,26 @@ model MaintenanceRequest {
   @@index([landlordId])
   @@index([propertyId])
   @@index([status])
+}
+model ActivityLog {
+  id              String   @id @default(uuid())
+  
+  // Property Link
+  propertyId      String
+  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  // Activity Details
+  type            String
+  description     String
+  date            DateTime
+  
+  // Optional Links
+  relatedId       String?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  
+  @@index([propertyId])
+  @@index([date])
+  @@index([type])
 }

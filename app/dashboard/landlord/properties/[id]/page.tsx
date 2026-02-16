@@ -1,0 +1,164 @@
+import { cookies } from "next/headers";
+import * as jose from "jose";
+import db from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import { PropertyTabs } from "./PropertyTabs";
+
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function PropertyDetailPage({ params }: PageProps) {
+  const { id } = await params;
+
+  // Get landlordId from JWT
+  const sessionCookie = (await cookies()).get("session")?.value;
+  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+  const { payload } = await jose.jwtVerify(sessionCookie!, secret);
+  const landlordId = payload.landlordId as string;
+
+  // Fetch property (ensure ownership)
+  const property = await db.property.findFirst({
+    where: {
+      id: id,
+      landlordId: landlordId,
+    },
+  });
+
+  if (!property) {
+    redirect("/dashboard/landlord");
+  }
+
+  // Fetch active tenancy
+  const activeTenancy = await db.tenancy.findFirst({
+    where: {
+      propertyId: id,
+      status: "active",
+    },
+    include: {
+      tenant: true,
+    },
+  });
+
+  // Fetch bills
+  const bills = await db.bill.findMany({
+    where: {
+      propertyId: id,
+      landlordId: landlordId,
+    },
+    include: {
+      payments: true,
+      ledgerEntries: {
+        orderBy: {
+          entryDate: "asc",
+        },
+      },
+    },
+    orderBy: { month: "desc" },
+  });
+
+  // ============================================
+  // SERIALIZE DATA (Convert Decimal to number)
+  // ============================================
+
+  const serializedTenancy = activeTenancy
+    ? {
+        ...activeTenancy,
+        monthlyRent: activeTenancy.monthlyRent.toNumber(),
+        securityDeposit: activeTenancy.securityDeposit.toNumber(),
+      }
+    : null;
+
+  const serializedBills = bills.map((bill) => ({
+    id: bill.id,
+    landlordId: bill.landlordId,
+    tenancyId: bill.tenancyId,
+    tenantId: bill.tenantId,
+    propertyId: bill.propertyId,
+    month: bill.month,
+    dueDate: bill.dueDate,
+    status: bill.status,
+    note: bill.note,
+    currency: bill.currency,
+    isEdited: bill.isEdited,
+    editedAt: bill.editedAt,
+    createdAt: bill.createdAt,
+    updatedAt: bill.updatedAt,
+    electricityUnits: bill.electricityUnits,
+
+    // Serialize Decimal fields
+    totalBill: bill.totalBill.toNumber(),
+    paidAmount: bill.paidAmount.toNumber(),
+    remainingAmount: bill.remainingAmount.toNumber(),
+    rent: bill.rent.toNumber(),
+    electricityRate: bill.electricityRate?.toNumber() || null,
+    electricityTotal: bill.electricityTotal?.toNumber() || null,
+    waterBill: bill.waterBill?.toNumber() || null,
+    carryForward: bill.carryForward.toNumber(),
+
+    // Serialize payments
+    payments: bill.payments.map((payment) => ({
+      id: payment.id,
+      billId: payment.billId,
+      amount: payment.amount.toNumber(),
+      paidAt: payment.paidAt,
+      confirmedAt: payment.confirmedAt,
+      paymentProof: payment.paymentProof,
+      paymentMethod: payment.paymentMethod,
+      verifiedByTenant: payment.verifiedByTenant,
+      verifiedAt: payment.verifiedAt,
+      isCorrection: payment.isCorrection,
+      correctionReason: payment.correctionReason,
+      originalPaymentId: payment.originalPaymentId,
+      note: payment.note,
+      createdAt: payment.createdAt,
+    })),
+
+    // Serialize ledger entries
+    ledgerEntries: bill.ledgerEntries.map((entry) => ({
+      id: entry.id,
+      billId: entry.billId,
+      description: entry.description,
+      paymentMethod: entry.paymentMethod,
+      paymentProof: entry.paymentProof,
+      verifiedByTenant: entry.verifiedByTenant,
+      createdBy: entry.createdBy,
+
+      // ✅ NEW: Meter reading fields
+      electricityPreviousReading: entry.electricityPreviousReading,
+      electricityCurrentReading: entry.electricityCurrentReading,
+      electricityUnitsConsumed: entry.electricityUnitsConsumed,
+      electricityRate: entry.electricityRate?.toNumber() || null,
+      electricityTotal: entry.electricityTotal?.toNumber() || null,
+
+      // Other charges
+      waterBill: entry.waterBill?.toNumber() || null,
+      rentAmount: entry.rentAmount?.toNumber() || null,
+
+      // Serialize Decimals (generic amounts)
+      debitAmount: entry.debitAmount?.toNumber() || null,
+      creditAmount: entry.creditAmount?.toNumber() || null,
+
+      // Edit tracking
+      isEdited: entry.isEdited,
+      editedAt: entry.editedAt?.toISOString() || null,
+
+      // Serialize Dates
+      entryDate: entry.entryDate.toISOString(),
+      createdAt: entry.createdAt.toISOString(),
+      updatedAt: entry.updatedAt.toISOString(),
+      verifiedAt: entry.verifiedAt?.toISOString() || null,
+    })),
+  }));
+
+  return (
+    <div style={{ padding: "2rem" }}>
+      <h1>📍 {property.address}</h1>
+      <PropertyTabs
+        propertyId={property.id}
+        activeTenancy={serializedTenancy}
+        bills={serializedBills}
+      />
+    </div>
+  );
+}
