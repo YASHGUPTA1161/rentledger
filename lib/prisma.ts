@@ -6,8 +6,8 @@ import { Pool } from "pg";
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false  // Neon pooler requires SSL with relaxed cert validation
-  }
+    rejectUnauthorized: false, // Neon pooler requires SSL with relaxed cert validation
+  },
 });
 
 // 2️⃣ Attach Prisma to the pg pool via adapter

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { updateProperty, deleteProperty } from "./actions";
 
 interface Property {
@@ -94,7 +95,16 @@ export function PropertyList({ properties }: { properties: Property[] }) {
           ) : (
             // VIEW MODE: Show property details + Edit/Delete buttons
             <>
-              <strong>📍 {property.address}</strong>
+              <Link
+                href={`/dashboard/landlord/properties/${property.id}`}
+                style={{
+                  textDecoration: "none",
+                  color: "inherit",
+                  fontWeight: "bold",
+                }}
+              >
+                📍 {property.address}
+              </Link>
               {property.description && (
                 <p style={{ margin: "0.5rem 0 0 0", color: "#666" }}>
                   {property.description}
