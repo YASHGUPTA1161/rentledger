@@ -27,7 +27,7 @@ export async function addLedgerEntry(formData: FormData) {
     const landlordId = payload.landlordId as string;
 
     // STEP 2: EXTRACT FORM DATA
-    const billId = formData.get("billId") as string;
+    const tenancyId = formData.get("tenancyId") as string;
     const description = formData.get("description") as string;
 
     // Meter reading fields (optional)
@@ -50,26 +50,76 @@ export async function addLedgerEntry(formData: FormData) {
     const paymentMethod = formData.get("paymentMethod") as string | null;
     const paymentProof = formData.get("paymentProof") as string | null;
 
-    // STEP 3: VERIFY OWNERSHIP
-    const bill = await prisma.bill.findUnique({
-      where: { id: billId },
+    // STEP 3: GET TENANCY AND VERIFY OWNERSHIP
+    const tenancy = await prisma.tenancy.findUnique({
+      where: { id: tenancyId },
       include: {
-        tenancy: {
-          include: {
-            property: true,
-          },
+        property: true,
+        tenant: true,
+      },
+    });
+
+    if (!tenancy || tenancy.property.landlordId !== landlordId) {
+      throw new Error("Unauthorized");
+    }
+
+    // STEP 4: FIND OR CREATE BILL FOR CURRENT MONTH
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // Start and end of current month
+    const startOfMonth = new Date(currentYear, currentMonth, 1);
+    const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
+
+    let bill = await prisma.bill.findFirst({
+      where: {
+        tenancyId,
+        month: {
+          gte: startOfMonth,
+          lte: endOfMonth,
         },
+      },
+      include: {
         ledgerEntries: {
           orderBy: { entryDate: "desc" },
         },
       },
     });
 
-    if (!bill || bill.tenancy.property.landlordId !== landlordId) {
-      throw new Error("Unauthorized");
+    // AUTO-CREATE BILL IF DOESN'T EXIST
+    if (!bill) {
+      const dueDate = new Date(currentYear, currentMonth + 1, 5); // Due on 5th of next month
+
+      bill = (await prisma.bill.create({
+        data: {
+          tenancyId,
+          propertyId: tenancy.propertyId,
+          landlordId,
+          tenantId: tenancy.tenantId,
+          month: startOfMonth,
+          dueDate,
+          rent: 0, // Will be calculated from entries
+          totalBill: 0,
+          paidAmount: 0,
+          remainingAmount: 0,
+          carryForward: 0,
+          status: "pending", // Default status for new bills (PaymentStatus enum)
+        },
+        include: {
+          ledgerEntries: {
+            orderBy: { entryDate: "desc" },
+          },
+        },
+      })) as any;
     }
 
-    // STEP 4: CALCULATE METER READING (if provided)
+    // At this point, bill is guaranteed to exist
+    if (!bill) {
+      throw new Error("Failed to create or find bill");
+    }
+
+    // STEP 5: CALCULATE METER READING (if provided)
     let electricityPreviousReading = null as number | null;
     let electricityUnitsConsumed = null as number | null;
     let electricityTotal = null as number | null;
@@ -79,7 +129,6 @@ export async function addLedgerEntry(formData: FormData) {
       const lastBillEntry = bill.ledgerEntries.find(
         (entry) => entry.electricityCurrentReading !== null,
       );
-
       electricityPreviousReading =
         lastBillEntry?.electricityCurrentReading || 0;
       electricityUnitsConsumed =
@@ -87,7 +136,7 @@ export async function addLedgerEntry(formData: FormData) {
       electricityTotal = electricityUnitsConsumed * electricityRate;
     }
 
-    // STEP 5: CALCULATE DEBIT (if this is a bill entry)
+    // STEP 6: CALCULATE DEBIT AMOUNT
     let debitAmount = null as number | null;
     if (
       electricityTotal !== null ||
@@ -98,10 +147,10 @@ export async function addLedgerEntry(formData: FormData) {
         (electricityTotal || 0) + (waterBill || 0) + (rentAmount || 0);
     }
 
-    // STEP 6: CREATE ENTRY
+    // STEP 7: CREATE ENTRY
     const entry = await prisma.ledgerEntry.create({
       data: {
-        billId,
+        billId: bill.id,
         entryDate: new Date(),
         description,
 
@@ -131,10 +180,10 @@ export async function addLedgerEntry(formData: FormData) {
       },
     });
 
-    // STEP 7: RECALCULATE BILL TOTALS
-    await recalculateBillTotals(billId);
+    // STEP 8: RECALCULATE BILL TOTALS
+    await recalculateBillTotals(bill.id);
 
-    revalidatePath(`/dashboard/landlord/properties/${bill.tenancy.propertyId}`);
+    revalidatePath(`/dashboard/landlord/properties/${tenancy.propertyId}`);
     return { success: true };
   } catch (error) {
     console.error("Add ledger entry error:", error);

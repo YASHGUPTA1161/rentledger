@@ -149,6 +149,16 @@ export function PropertyList({ properties }: { properties: Property[] }) {
                     onClick={(e) => {
                       e.preventDefault();
 
+                      // CAPTURE FORM REFERENCE IMMEDIATELY
+                      // React nullifies event properties after handler completes
+                      // So we must grab the form ref BEFORE showing the toast
+                      const form = e.currentTarget.closest("form");
+
+                      if (!form) {
+                        console.error("Form not found");
+                        return;
+                      }
+
                       toast(
                         (t) => (
                           <div>
@@ -161,9 +171,8 @@ export function PropertyList({ properties }: { properties: Property[] }) {
                               <button
                                 onClick={() => {
                                   toast.dismiss(t.id);
-                                  // Submit the form
-                                  const form = e.currentTarget.closest("form");
-                                  if (form) form.requestSubmit();
+                                  // Use captured form reference (not e.currentTarget)
+                                  form.requestSubmit();
                                 }}
                                 style={{
                                   padding: "6px 12px",
@@ -193,8 +202,8 @@ export function PropertyList({ properties }: { properties: Property[] }) {
                           </div>
                         ),
                         {
-                          duration: Infinity,
-                          position: "top-center",
+                          duration: 5000,
+                          position: "bottom-right",
                         },
                       );
                     }}

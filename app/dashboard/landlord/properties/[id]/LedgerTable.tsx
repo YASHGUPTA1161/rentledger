@@ -57,6 +57,7 @@ interface SerializedLedgerEntry {
 }
 
 interface LedgerTableProps {
+  tenancyId: string;
   billId: string;
   entries: SerializedLedgerEntry[];
   isLandlord: boolean; // Used to show/hide delete button
@@ -66,7 +67,12 @@ interface LedgerTableProps {
 // COMPONENT
 // ============================================
 
-export function LedgerTable({ billId, entries, isLandlord }: LedgerTableProps) {
+export function LedgerTable({
+  tenancyId,
+  billId,
+  entries,
+  isLandlord,
+}: LedgerTableProps) {
   const router = useRouter();
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [isAdding, setIsAdding] = useState(false);
@@ -291,7 +297,7 @@ export function LedgerTable({ billId, entries, isLandlord }: LedgerTableProps) {
           {/* New Entry Row */}
           {isAdding && (
             <NewEntryRow
-              billId={billId}
+              tenancyId={tenancyId}
               onSubmit={handleSubmitNew}
               onCancel={handleCancelAdd}
             />
@@ -353,11 +359,11 @@ export function LedgerTable({ billId, entries, isLandlord }: LedgerTableProps) {
 // ============================================
 
 function NewEntryRow({
-  billId,
+  tenancyId,
   onSubmit,
   onCancel,
 }: {
-  billId: string;
+  tenancyId: string;
   onSubmit: (formData: FormData) => void;
   onCancel: () => void;
 }) {
@@ -380,7 +386,7 @@ function NewEntryRow({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    formData.append("billId", billId);
+    formData.append("tenancyId", tenancyId);
     onSubmit(formData);
   };
 
