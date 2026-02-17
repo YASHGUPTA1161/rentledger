@@ -152,6 +152,7 @@ model Property {
   bills               Bill[]
   maintenanceRequests MaintenanceRequest[]
   activityLogs        ActivityLog[]        // ← ADD THIS LINE
+  documents           Document[]  
 }
 
 model Tenancy {
@@ -330,24 +331,36 @@ model LedgerEntry {
 
 
 model Document {
-  id           String       @id @default(uuid())
+  id           String   @id @default(uuid())
   landlordId   String
-  tenantId     String
+  propertyId   String
+  tenantId     String?
   billId       String?
   tenancyId    String?
-  documentType DocumentType
+  
+  // Flexible fields (user-defined)
+  documentName String       // Auto-capitalized
+  category     String?      // Optional
+  description  String?      // Optional
+  
+  // File metadata
   fileUrl      String
-  generatedAt  DateTime
-  createdAt    DateTime     @default(now())
-
-  landlord Landlord @relation(fields: [landlordId], references: [id])
-  tenant   Tenant   @relation(fields: [tenantId], references: [id])
-  bill     Bill?    @relation(fields: [billId], references: [id])
-  tenancy  Tenancy? @relation(fields: [tenancyId], references: [id])
+  fileSize     Int?
+  mimeType     String?
+  
+  // Dates
+  uploadedAt   DateTime     @default(now())
+  documentDate DateTime?
+  
+  // Relations
+  landlord Landlord  @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  tenant   Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bill     Bill?     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  tenancy  Tenancy?  @relation(fields: [tenancyId], references: [id], onDelete: Cascade)
+  property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([landlordId])
-  @@index([tenantId])
-  @@index([billId])
+  @@index([propertyId])
 }
 
 /////////////////////

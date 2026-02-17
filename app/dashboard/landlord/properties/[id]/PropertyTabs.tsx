@@ -8,15 +8,42 @@ import { Documents } from "./Documents";
 import { Maintenance } from "./Maintenance";
 import { ActivityLog } from "./ActivityLog";
 
+interface Tenant {
+  id: string;
+  fullName: string;
+}
+
+interface Tenancy {
+  id: string;
+  tenant: Tenant;
+}
+
+interface Document {
+  id: string;
+  documentName: string;
+  category: string | null;
+  description: string | null;
+  fileUrl: string;
+  fileSize: number | null;
+  uploadedAt: Date;
+  tenant?: { fullName: string } | null;
+}
+
+interface PropertyTabsProps {
+  propertyId: string;
+  activeTenancy: Record<string, unknown> | null;
+  bills: Record<string, unknown>[];
+  documents: Document[];
+  tenancies: Tenancy[];
+}
+
 export function PropertyTabs({
   propertyId,
   activeTenancy,
-  bills, // ← ADD THIS
-}: {
-  propertyId: string;
-  activeTenancy: any;
-  bills: any[]; // ← ADD THIS
-}) {
+  bills,
+  documents,
+  tenancies,
+}: PropertyTabsProps) {
   const [activeTab, setActiveTab] = useState("overview");
 
   const tabs = [
@@ -57,11 +84,17 @@ export function PropertyTabs({
         {activeTab === "bills" && (
           <BillsLedger
             propertyId={propertyId}
-            tenancyId={activeTenancy?.id}
+            tenancyId={(activeTenancy?.id as string) || ""}
             bills={bills}
           />
         )}
-        {activeTab === "documents" && <Documents propertyId={propertyId} />}
+        {activeTab === "documents" && (
+          <Documents
+            propertyId={propertyId}
+            initialDocuments={documents}
+            tenancies={tenancies}
+          />
+        )}
         {activeTab === "maintenance" && <Maintenance propertyId={propertyId} />}
         {activeTab === "activity" && <ActivityLog propertyId={propertyId} />}
       </div>

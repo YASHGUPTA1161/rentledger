@@ -3,6 +3,7 @@ import * as jose from "jose";
 import db from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { PropertyTabs } from "./PropertyTabs";
+import { getDocuments } from "./document-actions";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -54,7 +55,16 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         },
       },
     },
+
     orderBy: { month: "desc" },
+  });
+  // Fetch documents
+  const documentsData = await getDocuments(id);
+
+  // Fetch tenancies for document form
+  const tenancies = await db.tenancy.findMany({
+    where: { propertyId: id },
+    include: { tenant: true },
   });
 
   // ============================================
@@ -151,6 +161,17 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     })),
   }));
 
+  // Serialize tenancies (convert Decimal to number)
+  const serializedTenancies = tenancies.map((tenancy) => ({
+    id: tenancy.id,
+    tenant: {
+      id: tenancy.tenant.id,
+      fullName: tenancy.tenant.fullName,
+    },
+    monthlyRent: tenancy.monthlyRent.toNumber(),
+    securityDeposit: tenancy.securityDeposit.toNumber(),
+  }));
+
   return (
     <div style={{ padding: "2rem" }}>
       <h1>📍 {property.address}</h1>
@@ -158,6 +179,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         propertyId={property.id}
         activeTenancy={serializedTenancy}
         bills={serializedBills}
+        documents={documentsData.documents || []}
+        tenancies={serializedTenancies}
       />
     </div>
   );
