@@ -3,7 +3,10 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { createBill, addPayment } from "./bills-actions";
+import { getBillPreviewData } from "./bill-preview-actions";
 import { LedgerTable } from "./LedgerTable";
+import { BillPreview } from "@/components/BillPreview";
+import type { BillData } from "@/lib/generate-bill-data";
 
 interface BillsLedgerProps {
   propertyId: string;
@@ -18,6 +21,9 @@ export function BillsLedger({
 }: BillsLedgerProps) {
   const [showBillForm, setShowBillForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState<string | null>(null);
+  const [previewBillId, setPreviewBillId] = useState<string | null>(null);
+  const [previewBillData, setPreviewBillData] = useState<BillData | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   const handleCreateBill = async (formData: FormData) => {
     const result = await createBill(formData);
@@ -42,6 +48,28 @@ export function BillsLedger({
       setShowBillForm(false);
       window.location.reload();
     }
+  };
+
+  const handlePreviewBill = async (billId: string) => {
+    setIsLoadingPreview(true);
+    setPreviewBillId(billId);
+
+    const result = await getBillPreviewData(billId);
+
+    if (result.success && result.data) {
+      setPreviewBillData(result.data);
+    } else {
+      console.error("Failed to load bill preview:", result.error);
+      toast.error("Could not load bill preview", { position: "bottom-right" });
+      setPreviewBillId(null);
+    }
+
+    setIsLoadingPreview(false);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewBillId(null);
+    setPreviewBillData(null);
   };
 
   return (
@@ -282,108 +310,28 @@ export function BillsLedger({
               />
             </div>
 
-            {/* ADD PAYMENT BUTTON */}
+            {/* PREVIEW BILL BUTTON */}
             <button
-              onClick={() => setShowPaymentForm(bill.id)}
-              className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              onClick={() => handlePreviewBill(bill.id)}
+              disabled={isLoadingPreview && previewBillId === bill.id}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              + Add Payment
+              {isLoadingPreview && previewBillId === bill.id
+                ? "Loading..."
+                : "📄 Preview Bill"}
             </button>
-
-            {/* ADD PAYMENT FORM */}
-            {showPaymentForm === bill.id && (
-              <form
-                action={addPayment}
-                className="mt-4 border-t pt-4 space-y-3"
-              >
-                <input type="hidden" name="billId" value={bill.id} />
-                <input type="hidden" name="propertyId" value={propertyId} />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Amount (₹)
-                    </label>
-                    <input
-                      type="number"
-                      name="amount"
-                      required
-                      min="0"
-                      step="0.01"
-                      className="w-full border rounded px-3 py-2"
-                      placeholder={bill.remainingAmount.toString()}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Payment Date
-                    </label>
-                    <input
-                      type="date"
-                      name="paidAt"
-                      required
-                      className="w-full border rounded px-3 py-2"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Payment Method
-                  </label>
-                  <select
-                    name="paymentMethod"
-                    required
-                    className="w-full border rounded px-3 py-2"
-                  >
-                    <option value="">Select method</option>
-                    <option value="UPI">UPI</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Screenshot URL (from S3)
-                  </label>
-                  <input
-                    type="text"
-                    name="paymentProof"
-                    className="w-full border rounded px-3 py-2"
-                    placeholder="https://..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Note</label>
-                  <input
-                    type="text"
-                    name="note"
-                    className="w-full border rounded px-3 py-2"
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    Add Payment
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPaymentForm(null)}
-                    className="px-4 py-2 border rounded hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
           </div>
         ))}
       </div>
+
+      {/* BILL PREVIEW MODAL */}
+      {previewBillId && previewBillData && (
+        <BillPreview
+          billId={previewBillId}
+          billData={previewBillData}
+          onClose={handleClosePreview}
+        />
+      )}
     </div>
   );
 }
