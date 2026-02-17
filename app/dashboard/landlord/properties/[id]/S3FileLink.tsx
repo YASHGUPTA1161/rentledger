@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 /**
  * S3FileLink Component
@@ -33,7 +34,8 @@ export function S3FileLink({
     const key = urlParts[urlParts.length - 1];
 
     if (!key) {
-      alert("Invalid file URL");
+      console.error("Invalid file URL:", fileUrl);
+      toast.error("Could not open file", { position: "bottom-right" });
       return;
     }
 
@@ -55,7 +57,7 @@ export function S3FileLink({
       window.open(url, "_blank");
     } catch (error) {
       console.error("Error viewing file:", error);
-      alert("Failed to open file");
+      toast.error("Could not open file", { position: "bottom-right" });
     } finally {
       setIsLoading(false);
     }

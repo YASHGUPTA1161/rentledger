@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { S3FileLink } from "./S3FileLink";
 import {
@@ -66,6 +67,7 @@ interface LedgerTableProps {
 // ============================================
 
 export function LedgerTable({ billId, entries, isLandlord }: LedgerTableProps) {
+  const router = useRouter();
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [isAdding, setIsAdding] = useState(false);
 
@@ -121,18 +123,69 @@ export function LedgerTable({ billId, entries, isLandlord }: LedgerTableProps) {
     const result = await addLedgerEntry(formData);
     if (result.success) {
       setIsAdding(false);
+      toast.success("Entry added", { position: "bottom-right" });
     } else {
-      alert("Error: " + result.error);
+      // Log error for developers, don't show to user
+      console.error("Failed to add entry:", result.error);
     }
   };
 
   const handleDelete = async (entryId: string) => {
-    if (!confirm("Delete this entry?")) return;
+    // Use toast for confirmation instead of browser confirm
+    const deleteToastId = toast(
+      (t) => (
+        <div>
+          <p style={{ marginBottom: "8px", fontWeight: "500" }}>
+            Delete this entry?
+          </p>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id);
+                const result = await deleteLedgerEntry(entryId);
 
-    const result = await deleteLedgerEntry(entryId);
-    if (!result.success) {
-      alert("Error: " + result.error);
-    }
+                if (result.success) {
+                  toast.success("Entry deleted", { position: "bottom-right" });
+                  router.refresh();
+                } else {
+                  console.error("Failed to delete entry:", result.error);
+                  toast.error("Could not delete entry. Please try again.", {
+                    position: "bottom-right",
+                  });
+                }
+              }}
+              style={{
+                padding: "6px 12px",
+                backgroundColor: "#ef4444",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              style={{
+                padding: "6px 12px",
+                backgroundColor: "#6b7280",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        duration: Infinity,
+        position: "top-center",
+      },
+    );
   };
 
   // ============================================
@@ -404,11 +457,13 @@ function NewEntryRow({
       // Step 3: Construct the public URL
       const publicUrl = `${process.env.NEXT_PUBLIC_S3_URL || "https://t3.storage.dev"}/${process.env.NEXT_PUBLIC_S3_BUCKET || "rentledger"}/${key}`;
       setUploadedProofUrl(publicUrl);
-      toast.success("File uploaded successfully!");
+      toast.success("File uploaded", { position: "bottom-right" });
     } catch (error) {
       console.error("Upload error:", error);
-      setUploadError(error instanceof Error ? error.message : "Upload failed");
-      toast.error("Failed to upload file");
+      setUploadError("Upload failed");
+      toast.error("Upload failed. Please try again.", {
+        position: "bottom-right",
+      });
     } finally {
       setIsUploading(false);
     }

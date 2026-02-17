@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import { updateProperty, deleteProperty } from "./actions";
 
 interface Property {
@@ -146,13 +147,56 @@ export function PropertyList({ properties }: { properties: Property[] }) {
                       cursor: "pointer",
                     }}
                     onClick={(e) => {
-                      if (
-                        !confirm(
-                          "Are you sure you want to delete this property?",
-                        )
-                      ) {
-                        e.preventDefault();
-                      }
+                      e.preventDefault();
+
+                      toast(
+                        (t) => (
+                          <div>
+                            <p
+                              style={{ marginBottom: "8px", fontWeight: "500" }}
+                            >
+                              Delete this property?
+                            </p>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <button
+                                onClick={() => {
+                                  toast.dismiss(t.id);
+                                  // Submit the form
+                                  const form = e.currentTarget.closest("form");
+                                  if (form) form.requestSubmit();
+                                }}
+                                style={{
+                                  padding: "6px 12px",
+                                  backgroundColor: "#ef4444",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Delete
+                              </button>
+                              <button
+                                onClick={() => toast.dismiss(t.id)}
+                                style={{
+                                  padding: "6px 12px",
+                                  backgroundColor: "#6b7280",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ),
+                        {
+                          duration: Infinity,
+                          position: "top-center",
+                        },
+                      );
                     }}
                   >
                     🗑️ Delete
