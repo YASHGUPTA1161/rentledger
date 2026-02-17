@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { S3FileLink } from "./S3FileLink";
 import {
   addLedgerEntry,
   deleteLedgerEntry,
@@ -313,6 +314,11 @@ function NewEntryRow({
   const [water, setWater] = useState<number>(0);
   const [rent, setRent] = useState<number>(0);
 
+  // STATE: File upload
+  const [uploadedProofUrl, setUploadedProofUrl] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string>("");
+
   // CALCULATION: Auto-calculate units and total
   const units = currentReading > 0 ? currentReading : 0; // In real app, subtract previous
   const electricityTotal = units * rate;
@@ -323,6 +329,89 @@ function NewEntryRow({
     const formData = new FormData(e.currentTarget);
     formData.append("billId", billId);
     onSubmit(formData);
+  };
+
+  // Handle file upload to S3
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "application/pdf",
+    ];
+    if (!validTypes.includes(file.type)) {
+      setUploadError("Invalid file type. Only images and PDFs allowed.");
+      return;
+    }
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("File too large. Maximum size is 10MB.");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError("");
+
+    try {
+      // Sanitize filename to match API validation regex
+      const sanitizedFilename = file.name
+        .replace(/\s+/g, "_") // Replace spaces with underscores
+        .replace(/[^a-zA-Z0-9._-]/g, "") // Remove any other special chars
+        .substring(0, 200); // Limit length
+
+      // Step 1: Get presigned URL from API
+      const response = await fetch("/api/s3/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: sanitizedFilename,
+          contentType: file.type,
+          size: file.size,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("Upload API error:", error);
+        throw new Error(
+          error.details
+            ? JSON.stringify(error.details)
+            : error.error || "Failed to get upload URL",
+        );
+      }
+
+      const { presignedUrl, key } = await response.json();
+
+      // Step 2: Upload file directly to S3 using presigned URL
+      const uploadResponse = await fetch(presignedUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload file to S3");
+      }
+
+      // Step 3: Construct the public URL
+      const publicUrl = `${process.env.NEXT_PUBLIC_S3_URL || "https://t3.storage.dev"}/${process.env.NEXT_PUBLIC_S3_BUCKET || "rentledger"}/${key}`;
+      setUploadedProofUrl(publicUrl);
+      toast.success("File uploaded successfully!");
+    } catch (error) {
+      console.error("Upload error:", error);
+      setUploadError(error instanceof Error ? error.message : "Upload failed");
+      toast.error("Failed to upload file");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -449,14 +538,45 @@ function NewEntryRow({
         </select>
       </td>
       <td>
-        <input
-          type="text"
-          name="paymentProof"
-          form="new-entry-form"
-          placeholder="Proof URL"
-          className="ledger-table-input"
-          style={{ width: "120px" }}
-        />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            minWidth: "120px",
+          }}
+        >
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            onChange={handleFileSelect}
+            disabled={isUploading}
+            style={{ fontSize: "0.85em" }}
+          />
+          {isUploading && (
+            <span style={{ fontSize: "0.75em", color: "#666" }}>
+              Uploading...
+            </span>
+          )}
+          {uploadedProofUrl && (
+            <span style={{ fontSize: "0.75em", color: "green" }}>
+              ✅ Uploaded
+            </span>
+          )}
+          {uploadError && (
+            <span style={{ fontSize: "0.75em", color: "red" }}>
+              {uploadError}
+            </span>
+          )}
+
+          {/* Hidden input to store S3 URL for form submission */}
+          <input
+            type="hidden"
+            name="paymentProof"
+            form="new-entry-form"
+            value={uploadedProofUrl}
+          />
+        </div>
       </td>
       <td>-</td>
       <td>
@@ -530,6 +650,13 @@ function EntryRow({
 }) {
   const isVerified = entry.verifiedByTenant;
 
+  // STATE: File upload for edit mode
+  const [uploadedProofUrl, setUploadedProofUrl] = useState<string>(
+    entry.paymentProof || "",
+  );
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string>("");
+
   /**
    * EDIT MODE RENDERING
    * WHY: When isEditing is true, show input fields instead of text
@@ -568,6 +695,91 @@ function EntryRow({
       });
 
       onSaveEdit(formData);
+    };
+
+    // Handle file upload to S3 in edit mode
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Validate file type
+      const validTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "application/pdf",
+      ];
+      if (!validTypes.includes(file.type)) {
+        setUploadError("Invalid file type. Only images and PDFs allowed.");
+        return;
+      }
+
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        setUploadError("File too large. Maximum size is 10MB.");
+        return;
+      }
+
+      setIsUploading(true);
+      setUploadError("");
+
+      try {
+        // Sanitize filename to match API validation regex
+        const sanitizedFilename = file.name
+          .replace(/\s+/g, "_") // Replace spaces with underscores
+          .replace(/[^a-zA-Z0-9._-]/g, "") // Remove any other special chars
+          .substring(0, 200); // Limit length
+
+        // Step 1: Get presigned URL from API
+        const response = await fetch("/api/s3/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: sanitizedFilename,
+            contentType: file.type,
+            size: file.size,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error("Upload API error:", error);
+          throw new Error(
+            error.details
+              ? JSON.stringify(error.details)
+              : error.error || "Failed to get upload URL",
+          );
+        }
+
+        const { presignedUrl, key } = await response.json();
+
+        // Step 2: Upload file directly to S3 using presigned URL
+        const uploadResponse = await fetch(presignedUrl, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type,
+          },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload file to S3");
+        }
+
+        // Step 3: Construct the public URL
+        const publicUrl = `${process.env.NEXT_PUBLIC_S3_URL || "https://t3.storage.dev"}/${process.env.NEXT_PUBLIC_S3_BUCKET || "rentledger"}/${key}`;
+        setUploadedProofUrl(publicUrl);
+        toast.success("File uploaded successfully!");
+      } catch (error) {
+        console.error("Upload error:", error);
+        setUploadError(
+          error instanceof Error ? error.message : "Upload failed",
+        );
+        toast.error("Failed to upload file");
+      } finally {
+        setIsUploading(false);
+      }
     };
 
     return (
@@ -692,19 +904,40 @@ function EntryRow({
           </select>
         </td>
 
-        {/* Proof (read-only) */}
+        {/* Proof - Editable with upload */}
         <td>
-          {entry.paymentProof ? (
-            <a
-              href={entry.paymentProof}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              📷 View
-            </a>
-          ) : (
-            "-"
-          )}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              minWidth: "120px",
+            }}
+          >
+            {uploadedProofUrl && (
+              <S3FileLink fileUrl={uploadedProofUrl}>📷 Current</S3FileLink>
+            )}
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleFileSelect}
+              disabled={isUploading}
+              style={{ fontSize: "0.80em" }}
+            />
+            {isUploading && (
+              <span style={{ fontSize: "0.75em", color: "#666" }}>
+                Uploading...
+              </span>
+            )}
+            {uploadError && (
+              <span style={{ fontSize: "0.75em", color: "red" }}>
+                {uploadError}
+              </span>
+            )}
+
+            {/* Hidden input to store S3 URL */}
+            <input type="hidden" name="paymentProof" value={uploadedProofUrl} />
+          </div>
         </td>
 
         {/* Verified Status */}
@@ -780,18 +1013,7 @@ function EntryRow({
       </td>
       <td>{entry.paymentMethod || "-"}</td>
       <td>
-        {entry.paymentProof ? (
-          <a
-            href={entry.paymentProof}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ledger-proof-link"
-          >
-            📷 View
-          </a>
-        ) : (
-          "-"
-        )}
+        {entry.paymentProof ? <S3FileLink fileUrl={entry.paymentProof} /> : "-"}
       </td>
       <td>{isVerified ? "✓ Verified" : "-"}</td>
 
