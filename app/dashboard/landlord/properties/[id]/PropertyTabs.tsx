@@ -35,6 +35,8 @@ interface PropertyTabsProps {
   bills: Record<string, unknown>[];
   documents: Document[];
   tenancies: Tenancy[];
+  maintenanceRequests: Record<string, unknown>[];
+  activityLogs: Record<string, unknown>[];
 }
 
 export function PropertyTabs({
@@ -43,6 +45,8 @@ export function PropertyTabs({
   bills,
   documents,
   tenancies,
+  maintenanceRequests,
+  activityLogs,
 }: PropertyTabsProps) {
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -77,7 +81,16 @@ export function PropertyTabs({
 
       {/* Content */}
       <div className="flex-1">
-        {activeTab === "overview" && <Overview propertyId={propertyId} />}
+        {activeTab === "overview" && (
+          <Overview
+            propertyId={propertyId}
+            activeTenancy={activeTenancy}
+            bills={bills}
+            documents={documents as unknown as Record<string, unknown>[]}
+            maintenanceRequests={maintenanceRequests}
+            activityLogs={activityLogs}
+          />
+        )}
         {activeTab === "tenancy" && (
           <Tenancy propertyId={propertyId} activeTenancy={activeTenancy} />
         )}
@@ -95,8 +108,18 @@ export function PropertyTabs({
             tenancies={tenancies}
           />
         )}
-        {activeTab === "maintenance" && <Maintenance propertyId={propertyId} />}
-        {activeTab === "activity" && <ActivityLog propertyId={propertyId} />}
+        {activeTab === "maintenance" && (
+          <Maintenance
+            propertyId={propertyId}
+            maintenanceRequests={maintenanceRequests as never[]}
+          />
+        )}
+        {activeTab === "activity" && (
+          <ActivityLog
+            propertyId={propertyId}
+            activityLogs={activityLogs as never[]}
+          />
+        )}
       </div>
     </div>
   );

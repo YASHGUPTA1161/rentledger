@@ -34,6 +34,21 @@ export async function createTenancy(formData: FormData) {
     const leaseEndInput = formData.get("leaseEnd") as string;
     const leaseEnd = leaseEndInput ? new Date(leaseEndInput) : null;
 
+    // New tenant fields
+    const emergencyContact = formData.get("emergencyContact") as string | null;
+    const emergencyContactPhone = formData.get("emergencyContactPhone") as
+      | string
+      | null;
+    const idType = formData.get("idType") as string | null;
+    const idNumber = formData.get("idNumber") as string | null;
+    const dateOfBirthInput = formData.get("dateOfBirth") as string | null;
+    const dateOfBirth = dateOfBirthInput ? new Date(dateOfBirthInput) : null;
+    const occupation = formData.get("occupation") as string | null;
+    const workplace = formData.get("workplace") as string | null;
+    const moveInDateInput = formData.get("moveInDate") as string | null;
+    const moveInDate = moveInDateInput ? new Date(moveInDateInput) : null;
+    const address = formData.get("address") as string | null;
+
     // STEP 3: VERIFY PROPERTY OWNERSHIP
     const property = await db.property.findUnique({
       where: { id: propertyId },
@@ -78,20 +93,38 @@ export async function createTenancy(formData: FormData) {
       });
     }
 
-    // STEP 6: CREATE OR UPDATE TENANT RECORD
     const tenant = await db.tenant.upsert({
       where: { userId: user.id },
       update: {
-        // If tenant exists, update their info
         fullName: tenantName,
         landlordId: landlordId,
+        phone: tenantPhone || undefined,
+        email: tenantEmail || undefined,
+        address: address || undefined,
+        emergencyContact: emergencyContact || undefined,
+        emergencyContactPhone: emergencyContactPhone || undefined,
+        idType: idType || undefined,
+        idNumber: idNumber || undefined,
+        dateOfBirth: dateOfBirth || undefined,
+        occupation: occupation || undefined,
+        workplace: workplace || undefined,
+        moveInDate: moveInDate || undefined,
       },
       create: {
-        // If tenant doesn't exist, create new one
         userId: user.id,
         landlordId: landlordId,
         fullName: tenantName,
-        address: null,
+        phone: tenantPhone || null,
+        email: tenantEmail || null,
+        address: address || null,
+        emergencyContact: emergencyContact || null,
+        emergencyContactPhone: emergencyContactPhone || null,
+        idType: idType || null,
+        idNumber: idNumber || null,
+        dateOfBirth: dateOfBirth || null,
+        occupation: occupation || null,
+        workplace: workplace || null,
+        moveInDate: moveInDate || null,
       },
     });
 
@@ -184,4 +217,55 @@ export async function endTenancy(tenancyId: string, propertyId: string) {
   }
 
   redirect(`/dashboard/landlord/properties/${propertyId}`);
+}
+
+// ─── UPDATE SINGLE TENANT FIELD (inline edit) ───
+const DATE_FIELDS = ["dateOfBirth", "moveInDate", "policeVerificationDate"];
+
+export async function updateTenantField(
+  tenantId: string,
+  fieldName: string,
+  fieldValue: string,
+) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("session")?.value;
+    if (!token) return { success: false, error: "Not authenticated" };
+
+    const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const landlordId = payload.landlordId as string;
+
+    // Verify tenant belongs to this landlord
+    const tenant = await db.tenant.findFirst({
+      where: { id: tenantId, landlordId },
+    });
+    if (!tenant) return { success: false, error: "Tenant not found" };
+
+    // Convert value based on field type
+    let processedValue: string | Date | null = fieldValue || null;
+    if (DATE_FIELDS.includes(fieldName) && fieldValue) {
+      processedValue = new Date(fieldValue);
+    }
+
+    await db.tenant.update({
+      where: { id: tenantId },
+      data: { [fieldName]: processedValue },
+    });
+
+    // ── SYNC: If email is being updated, also update User.email ──
+    // WHY: User.email is the login credential. Tenant.email is the contact field.
+    // If they diverge, the tenant can't login with the email they see on their profile.
+    if (fieldName === "email" && fieldValue) {
+      await db.user.update({
+        where: { id: tenant.userId },
+        data: { email: fieldValue },
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Update tenant field error:", error);
+    return { success: false, error: "Failed to save" };
+  }
 }

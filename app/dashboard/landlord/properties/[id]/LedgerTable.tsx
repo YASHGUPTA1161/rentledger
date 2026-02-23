@@ -17,7 +17,7 @@ import {
 //  TYPE definitions removed - no entry type dropdown in simplified version
 type PaymentMethod = "UPI" | "CASH" | "BANK_TRANSFER";
 
-interface SerializedLedgerEntry {
+export interface SerializedLedgerEntry {
   id: string;
   billId: string;
   entryDate: string; // ISO string from server
@@ -61,6 +61,7 @@ interface LedgerTableProps {
   billId: string;
   entries: SerializedLedgerEntry[];
   isLandlord: boolean; // Used to show/hide delete button
+  onVerify?: (entryId: string) => void; // Tenant clicks ✓ to lock entry
 }
 
 // ============================================
@@ -72,6 +73,7 @@ export function LedgerTable({
   billId,
   entries,
   isLandlord,
+  onVerify,
 }: LedgerTableProps) {
   const router = useRouter();
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
@@ -317,6 +319,7 @@ export function LedgerTable({
               onStartEdit={() => handleStartEdit(entry.id)}
               onCancelEdit={handleCancelEdit}
               onSaveEdit={handleSaveEdit}
+              onVerify={onVerify}
             />
           ))}
 
@@ -696,6 +699,7 @@ function EntryRow({
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
+  onVerify,
 }: {
   entry: SerializedLedgerEntry;
   isLandlord: boolean;
@@ -708,6 +712,7 @@ function EntryRow({
   onStartEdit: () => void; // User clicked edit button
   onCancelEdit: () => void; // User clicked cancel button
   onSaveEdit: (formData: FormData) => void; // User clicked save button
+  onVerify?: (entryId: string) => void; // Tenant verifies this row
 }) {
   const isVerified = entry.verifiedByTenant;
 
@@ -1002,7 +1007,31 @@ function EntryRow({
         </td>
 
         {/* Verified Status */}
-        <td>{isVerified ? "✓ Verified" : "-"}</td>
+        <td>
+          {isVerified ? (
+            <span style={{ color: "#16a34a", fontWeight: 600 }}>
+              ✓ Verified
+            </span>
+          ) : !isLandlord && onVerify ? (
+            <button
+              onClick={() => onVerify(entry.id)}
+              style={{
+                padding: "4px 10px",
+                background: "#2563eb",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+              }}
+            >
+              ✓ Verify
+            </button>
+          ) : (
+            <span style={{ color: "#9ca3af" }}>-</span>
+          )}
+        </td>
 
         {/* Action Buttons */}
         {isLandlord && (
@@ -1076,7 +1105,29 @@ function EntryRow({
       <td>
         {entry.paymentProof ? <S3FileLink fileUrl={entry.paymentProof} /> : "-"}
       </td>
-      <td>{isVerified ? "✓ Verified" : "-"}</td>
+      <td>
+        {isVerified ? (
+          <span style={{ color: "#16a34a", fontWeight: 600 }}>✓ Verified</span>
+        ) : !isLandlord && onVerify ? (
+          <button
+            onClick={() => onVerify(entry.id)}
+            style={{
+              padding: "4px 10px",
+              background: "#2563eb",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+            }}
+          >
+            ✓ Verify
+          </button>
+        ) : (
+          <span style={{ color: "#9ca3af" }}>-</span>
+        )}
+      </td>
 
       {/* ACTION BUTTONS */}
       {isLandlord && (

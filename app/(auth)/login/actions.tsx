@@ -27,7 +27,11 @@ export async function loginAction(formData: FormData): Promise<FormState> {
   try {
     const user = await db.user.findUnique({ where: { email } });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (
+      !user ||
+      !user.password ||
+      !(await bcrypt.compare(password, user.password))
+    ) {
       return {
         errors: { email: ["Invalid email or password"] },
         fieldValues: { email, password: "" },
@@ -48,11 +52,21 @@ export async function loginAction(formData: FormData): Promise<FormState> {
       };
     }
 
+    // If tenant role, look up the Tenant record to get tenantId for JWT
+    let tenantId: string | undefined;
+    if (userRole.role === "tenant") {
+      const tenant = await db.tenant.findFirst({
+        where: { userId: user.id },
+      });
+      tenantId = tenant?.id;
+    }
+
     const payload = {
       userId: user.id,
       email: user.email,
       role: userRole.role,
       landlordId: userRole.landlordId,
+      tenantId, // undefined for landlords, set for tenants
     };
 
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -68,12 +82,19 @@ export async function loginAction(formData: FormData): Promise<FormState> {
       path: "/",
       maxAge: 60 * 60 * 2, // 2 hours (match JWT expiry)
     });
+    if (userRole.role === "tenant") {
+      redirect("/dashboard/tenant");
+    }
+    redirect("/dashboard/landlord");
   } catch (error) {
+    // redirect() throws NEXT_REDIRECT — must re-throw so Next.js handles it
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
+      throw error;
+    }
     console.error("Login error: ", error);
     return {
       errors: { email: ["An unexpected error occurred. Please try again."] },
       fieldValues: { email, password: "" },
     };
   }
-  redirect("/dashboard");
 }

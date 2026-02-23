@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "./activity-actions";
 
 interface Document {
   id: string;
@@ -80,6 +81,13 @@ export async function uploadDocument(formData: FormData): Promise<{
       },
     });
 
+    await logActivity(
+      propertyId,
+      "DOCUMENT_UPLOADED",
+      `Document "${capitalizedName}" uploaded`,
+      document.id,
+    );
+
     revalidatePath(`/dashboard/landlord/properties/${propertyId}`);
     return { success: true, documentId: document.id };
   } catch (error) {
@@ -101,6 +109,14 @@ export async function deleteDocument(documentId: string): Promise<{
     if (!document) return { success: false, error: "Not found" };
 
     await prisma.document.delete({ where: { id: documentId } });
+
+    await logActivity(
+      document.propertyId,
+      "DOCUMENT_DELETED",
+      `Document "${document.documentName}" deleted`,
+      documentId,
+    );
+
     revalidatePath(`/dashboard/landlord/properties/${document.propertyId}`);
 
     return { success: true };
