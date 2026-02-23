@@ -3,70 +3,52 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { S3FileLink } from "./S3FileLink";
 import {
   addLedgerEntry,
   deleteLedgerEntry,
   updateLedgerEntry,
 } from "./ledger-actions";
+import { EntryRow } from "./components/ledger/EntryRow";
+import { NewEntryRow } from "./components/ledger/NewEntryRow";
+import { LedgerTotals } from "./components/ledger/LedgerTotals";
+import {
+  LEDGER_COLUMNS,
+  LEDGER_LABELS,
+  LEDGER_TOASTS,
+  DELETE_CONFIRM_TEXT,
+} from "./components/ledger/constants";
 
-// ============================================
-// TYPES
-// ============================================
+// ─── Re-export types so existing importers don't break ───────
+// TenantBills.tsx imports SerializedLedgerEntry from this path.
+// Keep this re-export here permanently.
+export type { SerializedLedgerEntry } from "./components/ledger/types";
+export type { LedgerTableProps } from "./components/ledger/types";
 
-//  TYPE definitions removed - no entry type dropdown in simplified version
-type PaymentMethod = "UPI" | "CASH" | "BANK_TRANSFER";
+import type { SerializedLedgerEntry } from "./components/ledger/types";
+import type { LedgerTableProps } from "./components/ledger/types";
 
-export interface SerializedLedgerEntry {
-  id: string;
-  billId: string;
-  entryDate: string; // ISO string from server
-  description: string;
-
-  // ✅ NEW: Meter reading fields
-  electricityPreviousReading: number | null;
-  electricityCurrentReading: number | null;
-  electricityUnitsConsumed: number | null;
-  electricityRate: number | null;
-  electricityTotal: number | null;
-
-  // Other charges (optional)
-  waterBill: number | null;
-  rentAmount: number | null;
-
-  // Generic amounts
-  debitAmount: number | null;
-  creditAmount: number | null;
-
-  // Payment details
-  paymentMethod: string | null;
-  paymentProof: string | null;
-
-  // Verification
-  verifiedByTenant: boolean;
-  verifiedAt: string | null;
-
-  // Edit tracking
-  isEdited: boolean;
-  editedAt: string | null;
-
-  // Metadata
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface LedgerTableProps {
-  tenancyId: string;
-  billId: string;
-  entries: SerializedLedgerEntry[];
-  isLandlord: boolean; // Used to show/hide delete button
-  onVerify?: (entryId: string) => void; // Tenant clicks ✓ to lock entry
-}
-
-// ============================================
-// COMPONENT
-// ============================================
+// ============================================================
+// LedgerTable — thin orchestrator
+//
+// WHAT THIS DOES:
+//   Manages state (which row is editing, which are selected,
+//   is-adding) and passes handlers down to sub-components.
+//
+// WHAT THIS DOESN'T DO:
+//   Render individual rows (EntryRow / NewEntryRow handle that)
+//   Calculate totals (LedgerTotals handles that)
+//   Handle file uploads (row components handle that)
+//
+// ASCII FLOW:
+//   LedgerTable
+//   ├── <table>
+//   │   ├── <thead>  ← column headers from LEDGER_COLUMNS
+//   │   └── <tbody>
+//   │       ├── NewEntryRow  (when isAdding=true)
+//   │       ├── EntryRow × N (one per entry)
+//   │       └── LedgerTotals
+//   └── "+ Add Entry" button (landlord only)
+// ============================================================
 
 export function LedgerTable({
   tenancyId,
@@ -78,199 +60,94 @@ export function LedgerTable({
   const router = useRouter();
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [isAdding, setIsAdding] = useState(false);
-
-  // ============================================
-  // NEW: EDIT STATE
-  // ============================================
-  // WHY: Track which entry is currently being edited
-  // WHAT: Store entry ID when user clicks edit button
-  // HOW: null = no editing, string = editing that entry ID
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // ============================================
-  // VALIDATION: Can entry be edited?
-  // ============================================
-  /**
-   * RULE: Entry can only be edited if:
-   * 1. Created within last 24 hours AND
-   * 2. Not verified by tenant
-   *
-   * WHY 24hr limit? Give landlord time to fix mistakes, but prevent
-   * changing old entries after tenant has seen them.
-   *
-   * WHY check verification? Once tenant verifies, it's locked.
-   * Like a signed contract - can't change after signature.
-   */
+  // ─── Edit guard: 24hr window + not verified ───────────────
   const canEditEntry = (entry: SerializedLedgerEntry): boolean => {
-    // Already verified? → Cannot edit (locked)
     if (entry.verifiedByTenant) return false;
-
-    // Calculate time since creation
-    const createdAt = new Date(entry.createdAt);
-    const now = new Date();
     const hoursSinceCreation =
-      (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-
-    // Can edit if less than 24 hours old
+      (Date.now() - new Date(entry.createdAt).getTime()) / (1000 * 60 * 60);
     return hoursSinceCreation < 24;
   };
 
-  // ============================================
-  // HANDLERS
-  // ============================================
-
-  const handleAddRow = () => {
-    setIsAdding(true);
-  };
-
-  const handleCancelAdd = () => {
-    setIsAdding(false);
-  };
-
+  // ─── Handlers ─────────────────────────────────────────────
   const handleSubmitNew = async (formData: FormData) => {
     const result = await addLedgerEntry(formData);
     if (result.success) {
       setIsAdding(false);
-      toast.success("Entry added", { position: "bottom-right" });
+      toast.success(LEDGER_TOASTS.entryAdded, { position: "bottom-right" });
     } else {
-      // Log error for developers, don't show to user
       console.error("Failed to add entry:", result.error);
     }
   };
 
   const handleDelete = async (entryId: string) => {
-    // Use toast for confirmation instead of browser confirm
-    const deleteToastId = toast(
+    toast(
       (t) => (
         <div>
-          <p style={{ marginBottom: "8px", fontWeight: "500" }}>
-            Delete this entry?
-          </p>
-          <div style={{ display: "flex", gap: "8px" }}>
+          <p className="ledger-delete-confirm-text">{DELETE_CONFIRM_TEXT}</p>
+          <div className="ledger-delete-confirm-actions">
             <button
               onClick={async () => {
                 toast.dismiss(t.id);
                 const result = await deleteLedgerEntry(entryId);
-
                 if (result.success) {
-                  toast.success("Entry deleted", { position: "bottom-right" });
+                  toast.success(LEDGER_TOASTS.entryDeleted, {
+                    position: "bottom-right",
+                  });
                   router.refresh();
                 } else {
-                  console.error("Failed to delete entry:", result.error);
-                  toast.error("Could not delete entry. Please try again.", {
+                  toast.error(LEDGER_TOASTS.deleteFailed, {
                     position: "bottom-right",
                   });
                 }
               }}
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "#ef4444",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
+              className="ledger-btn ledger-btn--delete-confirm"
             >
-              Delete
+              {LEDGER_LABELS.deleteConfirm}
             </button>
             <button
               onClick={() => toast.dismiss(t.id)}
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "#6b7280",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
+              className="ledger-btn ledger-btn--cancel"
             >
-              Cancel
+              {LEDGER_LABELS.deleteCancel}
             </button>
           </div>
         </div>
       ),
-      {
-        duration: Infinity,
-        position: "top-center",
-      },
+      { duration: Infinity, position: "top-center" },
     );
   };
 
-  // ============================================
-  // NEW: EDIT HANDLERS
-  // ============================================
-
-  /**
-   * START EDITING
-   * WHY: User clicked edit button
-   * WHAT: Set editingId to that entry's ID
-   * EFFECT: Row switches from display mode to edit mode
-   */
-  const handleStartEdit = (entryId: string) => {
-    setEditingId(entryId);
-  };
-
-  /**
-   * CANCEL EDITING
-   * WHY: User clicked cancel or pressed Esc
-   * WHAT: Clear editingId back to null
-   * EFFECT: Row switches back to display mode, discards changes
-   */
-  const handleCancelEdit = () => {
-    setEditingId(null);
-  };
-
-  /**
-   * SAVE EDITED ENTRY
-   * WHY: User clicked save button
-   * WHAT: Send form data to server action
-   * FLOW:
-   *   User clicks Save
-   *     ↓
-   *   Call updateLedgerEntry() server action
-   *     ↓
-   *   Server validates 24hr + verification
-   *     ↓
-   *   Server updates database
-   *     ↓
-   *   Revalidate page data
-   *     ↓
-   *   Exit edit mode (setEditingId(null))
-   */
   const handleSaveEdit = async (formData: FormData) => {
     const result = await updateLedgerEntry(formData);
-
     if (result.success) {
-      toast.success("Entry updated successfully!");
-      setEditingId(null); // Exit edit mode
+      toast.success(LEDGER_TOASTS.entryUpdated);
+      setEditingId(null);
     } else {
-      toast.error(result.error || "Failed to update entry");
+      toast.error(result.error || LEDGER_TOASTS.updateFailed);
     }
   };
 
   const toggleRowSelection = (entryId: string) => {
     setSelectedRows((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(entryId)) {
-        newSet.delete(entryId);
-      } else {
-        newSet.add(entryId);
-      }
-      return newSet;
+      const next = new Set(prev);
+      next.has(entryId) ? next.delete(entryId) : next.add(entryId);
+      return next;
     });
   };
 
-  // ============================================
-  // RENDER
-  // ============================================
-
+  // ─── Render ───────────────────────────────────────────────
   return (
-    <div className="ledger-table-container">
-      <div className="ledger-table-header">
+    <div className="ledger-container">
+      <div className="ledger-header">
         <h2>Ledger Entries</h2>
         {isLandlord && (
-          <button onClick={handleAddRow} className="ledger-add-button">
-            + Add Entry
+          <button
+            onClick={() => setIsAdding(true)}
+            className="ledger-btn ledger-btn--add"
+          >
+            {LEDGER_LABELS.addEntry}
           </button>
         )}
       </div>
@@ -278,34 +155,32 @@ export function LedgerTable({
       <table className="ledger-table">
         <thead>
           <tr>
-            {isLandlord && <th>☐</th>}
-            <th>Date</th>
-            <th>Description</th>
-            <th>Curr Meter</th>
-            <th>Rate</th>
-            <th>Units</th>
-            <th>Elec ₹</th>
-            <th>Water ₹</th>
-            <th>Rent ₹</th>
-            <th>Debit (₹)</th>
-            <th>Credit (₹)</th>
-            <th>Method</th>
-            <th>Proof</th>
-            <th>Verify</th>
-            {isLandlord && <th>Actions</th>}
+            {isLandlord && <th>{LEDGER_COLUMNS.checkbox}</th>}
+            <th>{LEDGER_COLUMNS.date}</th>
+            <th>{LEDGER_COLUMNS.description}</th>
+            <th>{LEDGER_COLUMNS.currMeter}</th>
+            <th>{LEDGER_COLUMNS.rate}</th>
+            <th>{LEDGER_COLUMNS.units}</th>
+            <th>{LEDGER_COLUMNS.electricity}</th>
+            <th>{LEDGER_COLUMNS.water}</th>
+            <th>{LEDGER_COLUMNS.rent}</th>
+            <th>{LEDGER_COLUMNS.debit}</th>
+            <th>{LEDGER_COLUMNS.credit}</th>
+            <th>{LEDGER_COLUMNS.method}</th>
+            <th>{LEDGER_COLUMNS.proof}</th>
+            <th>{LEDGER_COLUMNS.verify}</th>
+            {isLandlord && <th>{LEDGER_COLUMNS.actions}</th>}
           </tr>
         </thead>
         <tbody>
-          {/* New Entry Row */}
           {isAdding && (
             <NewEntryRow
               tenancyId={tenancyId}
               onSubmit={handleSubmitNew}
-              onCancel={handleCancelAdd}
+              onCancel={() => setIsAdding(false)}
             />
           )}
 
-          {/* Existing Entries */}
           {entries.map((entry) => (
             <EntryRow
               key={entry.id}
@@ -316,861 +191,16 @@ export function LedgerTable({
               onDelete={() => handleDelete(entry.id)}
               isEditing={editingId === entry.id}
               canEdit={canEditEntry(entry)}
-              onStartEdit={() => handleStartEdit(entry.id)}
-              onCancelEdit={handleCancelEdit}
+              onStartEdit={() => setEditingId(entry.id)}
+              onCancelEdit={() => setEditingId(null)}
               onSaveEdit={handleSaveEdit}
               onVerify={onVerify}
             />
           ))}
 
-          {/* Totals Row */}
-          <tr className="totals-row">
-            <td
-              colSpan={isLandlord ? 4 : 3}
-              style={{ textAlign: "right", fontWeight: "bold" }}
-            >
-              TOTALS:
-            </td>
-            <td style={{ fontWeight: "bold" }}>
-              ₹
-              {entries
-                .reduce((sum, e) => sum + (e.debitAmount || 0), 0)
-                .toLocaleString()}
-            </td>
-            <td style={{ fontWeight: "bold" }}>
-              ₹
-              {entries
-                .reduce((sum, e) => sum + (e.creditAmount || 0), 0)
-                .toLocaleString()}
-            </td>
-            <td colSpan={isLandlord ? 4 : 3}>
-              Remaining: ₹
-              {(
-                entries.reduce((sum, e) => sum + (e.debitAmount || 0), 0) -
-                entries.reduce((sum, e) => sum + (e.creditAmount || 0), 0)
-              ).toLocaleString()}
-            </td>
-          </tr>
+          <LedgerTotals entries={entries} isLandlord={isLandlord} />
         </tbody>
       </table>
     </div>
-  );
-}
-
-// ============================================
-// SUB-COMPONENTS
-// ============================================
-
-function NewEntryRow({
-  tenancyId,
-  onSubmit,
-  onCancel,
-}: {
-  tenancyId: string;
-  onSubmit: (formData: FormData) => void;
-  onCancel: () => void;
-}) {
-  // STATE: Meter reading fields for real-time calculation
-  const [currentReading, setCurrentReading] = useState<number>(0);
-  const [rate, setRate] = useState<number>(0);
-  const [water, setWater] = useState<number>(0);
-  const [rent, setRent] = useState<number>(0);
-
-  // STATE: File upload
-  const [uploadedProofUrl, setUploadedProofUrl] = useState<string>("");
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string>("");
-
-  // CALCULATION: Auto-calculate units and total
-  const units = currentReading > 0 ? currentReading : 0; // In real app, subtract previous
-  const electricityTotal = units * rate;
-  const total = electricityTotal + water + rent;
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    formData.append("tenancyId", tenancyId);
-    onSubmit(formData);
-  };
-
-  // Handle file upload to S3
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "application/pdf",
-    ];
-    if (!validTypes.includes(file.type)) {
-      setUploadError("Invalid file type. Only images and PDFs allowed.");
-      return;
-    }
-
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError("File too large. Maximum size is 10MB.");
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadError("");
-
-    try {
-      // Sanitize filename to match API validation regex
-      const sanitizedFilename = file.name
-        .replace(/\s+/g, "_") // Replace spaces with underscores
-        .replace(/[^a-zA-Z0-9._-]/g, "") // Remove any other special chars
-        .substring(0, 200); // Limit length
-
-      // Step 1: Get presigned URL from API
-      const response = await fetch("/api/s3/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename: sanitizedFilename,
-          contentType: file.type,
-          size: file.size,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error("Upload API error:", error);
-        throw new Error(
-          error.details
-            ? JSON.stringify(error.details)
-            : error.error || "Failed to get upload URL",
-        );
-      }
-
-      const { presignedUrl, key } = await response.json();
-
-      // Step 2: Upload file directly to S3 using presigned URL
-      const uploadResponse = await fetch(presignedUrl, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type,
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("Failed to upload file to S3");
-      }
-
-      // Step 3: Construct the public URL
-      const publicUrl = `${process.env.NEXT_PUBLIC_S3_URL || "https://t3.storage.dev"}/${process.env.NEXT_PUBLIC_S3_BUCKET || "rentledger"}/${key}`;
-      setUploadedProofUrl(publicUrl);
-      toast.success("File uploaded", { position: "bottom-right" });
-    } catch (error) {
-      console.error("Upload error:", error);
-      setUploadError("Upload failed");
-      toast.error("Upload failed. Please try again.", {
-        position: "bottom-right",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  return (
-    <tr className="new-entry-row">
-      <td>
-        <form onSubmit={handleSubmit} id="new-entry-form" />
-      </td>
-      <td>
-        <input
-          type="date"
-          name="entryDate"
-          form="new-entry-form"
-          defaultValue={new Date().toISOString().split("T")[0]}
-          className="ledger-table-input"
-          required
-        />
-      </td>
-      <td>
-        <input
-          type="text"
-          name="description"
-          form="new-entry-form"
-          placeholder="Description..."
-          className="ledger-table-input"
-          required
-        />
-      </td>
-
-      {/* METER READING FIELDS */}
-      <td>
-        <input
-          type="number"
-          name="electricityCurrentReading"
-          form="new-entry-form"
-          placeholder="Current meter"
-          className="ledger-table-input"
-          value={currentReading || ""}
-          onChange={(e) => setCurrentReading(parseFloat(e.target.value) || 0)}
-          style={{ width: "100px" }}
-        />
-      </td>
-      <td>
-        <input
-          type="number"
-          name="electricityRate"
-          form="new-entry-form"
-          placeholder="₹/unit"
-          step="0.01"
-          className="ledger-table-input"
-          value={rate || ""}
-          onChange={(e) => setRate(parseFloat(e.target.value) || 0)}
-          style={{ width: "80px" }}
-        />
-      </td>
-      <td style={{ color: "#666", fontSize: "0.9em" }}>
-        {units ? `${units} units` : "-"}
-      </td>
-      <td style={{ color: "#666", fontSize: "0.9em" }}>
-        {electricityTotal ? `₹${electricityTotal.toFixed(2)}` : "-"}
-      </td>
-
-      {/* OTHER CHARGES */}
-      <td>
-        <input
-          type="number"
-          name="waterBill"
-          form="new-entry-form"
-          placeholder="Water"
-          step="0.01"
-          className="ledger-table-input"
-          value={water || ""}
-          onChange={(e) => setWater(parseFloat(e.target.value) || 0)}
-          style={{ width: "90px" }}
-        />
-      </td>
-      <td>
-        <input
-          type="number"
-          name="rentAmount"
-          form="new-entry-form"
-          placeholder="Rent"
-          step="0.01"
-          className="ledger-table-input"
-          value={rent || ""}
-          onChange={(e) => setRent(parseFloat(e.target.value) || 0)}
-          style={{ width: "100px" }}
-        />
-      </td>
-
-      {/* TOTALS */}
-      <td
-        style={{
-          fontWeight: "bold",
-          background: total > 0 ? "#fff3cd" : "transparent",
-          color: total > 0 ? "#856404" : "#999",
-        }}
-      >
-        {total > 0 ? `₹${total.toFixed(2)}` : "-"}
-      </td>
-      <td>
-        <input
-          type="number"
-          name="creditAmount"
-          form="new-entry-form"
-          placeholder="Payment"
-          step="0.01"
-          className="ledger-table-input"
-          style={{ width: "100px" }}
-        />
-      </td>
-
-      {/* PAYMENT DETAILS */}
-      <td>
-        <select
-          name="paymentMethod"
-          form="new-entry-form"
-          className="ledger-table-input"
-          style={{ width: "100px" }}
-        >
-          <option value="">-</option>
-          <option value="UPI">UPI</option>
-          <option value="CASH">Cash</option>
-          <option value="BANK_TRANSFER">Bank</option>
-        </select>
-      </td>
-      <td>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "4px",
-            minWidth: "120px",
-          }}
-        >
-          <input
-            type="file"
-            accept="image/*,application/pdf"
-            onChange={handleFileSelect}
-            disabled={isUploading}
-            style={{ fontSize: "0.85em" }}
-          />
-          {isUploading && (
-            <span style={{ fontSize: "0.75em", color: "#666" }}>
-              Uploading...
-            </span>
-          )}
-          {uploadedProofUrl && (
-            <span style={{ fontSize: "0.75em", color: "green" }}>
-              ✅ Uploaded
-            </span>
-          )}
-          {uploadError && (
-            <span style={{ fontSize: "0.75em", color: "red" }}>
-              {uploadError}
-            </span>
-          )}
-
-          {/* Hidden input to store S3 URL for form submission */}
-          <input
-            type="hidden"
-            name="paymentProof"
-            form="new-entry-form"
-            value={uploadedProofUrl}
-          />
-        </div>
-      </td>
-      <td>-</td>
-      <td>
-        <button
-          type="submit"
-          form="new-entry-form"
-          className="ledger-save-button"
-        >
-          Save
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="ledger-cancel-button"
-        >
-          Cancel
-        </button>
-      </td>
-    </tr>
-  );
-}
-
-/**
- * ============================================
- * ENTRY ROW COMPONENT
- * ============================================
- *
- * DISPLAY vs EDIT MODE:
- * This component has TWO modes, controlled by `isEditing` prop
- *
- * DISPLAY MODE (isEditing = false):
- *   - Shows read-only data
- *   - Shows "Edit" button (if canEdit = true)
- *   - Shows "Delete" button
- *
- * EDIT MODE (isEditing = true):
- *   - Shows input fields for all editable data
- *   - Shows "Save" and "Cancel" buttons
- *   - Hides "Edit" and "Delete" buttons
- *
- * EDIT VALIDATION:
- *   - canEdit = true → Show enabled edit button
- *   - canEdit = false → Show disabled edit button with tooltip
- *
- * WHY THIS PATTERN?
- *   Like Gmail - click edit, row transforms to form, save or cancel
- */
-function EntryRow({
-  entry,
-  isLandlord,
-  isSelected,
-  onToggleSelect,
-  onDelete,
-  isEditing,
-  canEdit,
-  onStartEdit,
-  onCancelEdit,
-  onSaveEdit,
-  onVerify,
-}: {
-  entry: SerializedLedgerEntry;
-  isLandlord: boolean;
-  isSelected: boolean;
-  onToggleSelect: () => void;
-  onDelete: () => void;
-  // NEW: Edit props
-  isEditing: boolean; // Is THIS row currently being edited?
-  canEdit: boolean; // Can this row be edited? (24hr + not verified)
-  onStartEdit: () => void; // User clicked edit button
-  onCancelEdit: () => void; // User clicked cancel button
-  onSaveEdit: (formData: FormData) => void; // User clicked save button
-  onVerify?: (entryId: string) => void; // Tenant verifies this row
-}) {
-  const isVerified = entry.verifiedByTenant;
-
-  // STATE: File upload for edit mode
-  const [uploadedProofUrl, setUploadedProofUrl] = useState<string>(
-    entry.paymentProof || "",
-  );
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string>("");
-
-  /**
-   * EDIT MODE RENDERING
-   * WHY: When isEditing is true, show input fields instead of text
-   * FLOW:
-   *   User clicks Edit button
-   *     ↓
-   *   isEditing becomes true
-   *     ↓
-   *   This code block renders
-   *     ↓
-   *   User sees input fields with current values
-   */
-  if (isEditing) {
-    // Manual save handler - collects data without form element
-    const handleSave = () => {
-      const formData = new FormData();
-
-      // Add entry ID and bill ID
-      formData.append("entryId", entry.id);
-      formData.append("billId", entry.billId);
-
-      // Collect all input values by name
-      const row = document.getElementById(`edit-row-${entry.id}`);
-      if (!row) return;
-
-      const inputs = row.querySelectorAll("input, select");
-      inputs.forEach((input) => {
-        if (
-          input instanceof HTMLInputElement ||
-          input instanceof HTMLSelectElement
-        ) {
-          if (input.name && input.value) {
-            formData.append(input.name, input.value);
-          }
-        }
-      });
-
-      onSaveEdit(formData);
-    };
-
-    // Handle file upload to S3 in edit mode
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      // Validate file type
-      const validTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-        "application/pdf",
-      ];
-      if (!validTypes.includes(file.type)) {
-        setUploadError("Invalid file type. Only images and PDFs allowed.");
-        return;
-      }
-
-      // Validate file size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        setUploadError("File too large. Maximum size is 10MB.");
-        return;
-      }
-
-      setIsUploading(true);
-      setUploadError("");
-
-      try {
-        // Sanitize filename to match API validation regex
-        const sanitizedFilename = file.name
-          .replace(/\s+/g, "_") // Replace spaces with underscores
-          .replace(/[^a-zA-Z0-9._-]/g, "") // Remove any other special chars
-          .substring(0, 200); // Limit length
-
-        // Step 1: Get presigned URL from API
-        const response = await fetch("/api/s3/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            filename: sanitizedFilename,
-            contentType: file.type,
-            size: file.size,
-          }),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          console.error("Upload API error:", error);
-          throw new Error(
-            error.details
-              ? JSON.stringify(error.details)
-              : error.error || "Failed to get upload URL",
-          );
-        }
-
-        const { presignedUrl, key } = await response.json();
-
-        // Step 2: Upload file directly to S3 using presigned URL
-        const uploadResponse = await fetch(presignedUrl, {
-          method: "PUT",
-          body: file,
-          headers: {
-            "Content-Type": file.type,
-          },
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error("Failed to upload file to S3");
-        }
-
-        // Step 3: Construct the public URL
-        const publicUrl = `${process.env.NEXT_PUBLIC_S3_URL || "https://t3.storage.dev"}/${process.env.NEXT_PUBLIC_S3_BUCKET || "rentledger"}/${key}`;
-        setUploadedProofUrl(publicUrl);
-        toast.success("File uploaded successfully!");
-      } catch (error) {
-        console.error("Upload error:", error);
-        setUploadError(
-          error instanceof Error ? error.message : "Upload failed",
-        );
-        toast.error("Failed to upload file");
-      } finally {
-        setIsUploading(false);
-      }
-    };
-
-    return (
-      <tr className="editing-row" id={`edit-row-${entry.id}`}>
-        {/* Checkbox column */}
-        {isLandlord && <td>-</td>}
-
-        {/* Date Input */}
-        <td>
-          <input
-            type="date"
-            name="entryDate"
-            defaultValue={entry.entryDate.split("T")[0]}
-            className="ledger-table-input"
-            required
-          />
-        </td>
-
-        {/* Description Input */}
-        <td>
-          <input
-            type="text"
-            name="description"
-            defaultValue={entry.description}
-            className="ledger-table-input"
-            required
-          />
-        </td>
-
-        {/* Current Meter Reading */}
-        <td>
-          <input
-            type="number"
-            name="electricityCurrentReading"
-            defaultValue={entry.electricityCurrentReading || ""}
-            placeholder="0"
-            className="ledger-table-input"
-          />
-        </td>
-
-        {/* Electricity Rate */}
-        <td>
-          <input
-            type="number"
-            name="electricityRate"
-            defaultValue={entry.electricityRate || ""}
-            step="0.01"
-            placeholder="₹0"
-            className="ledger-table-input"
-          />
-        </td>
-
-        {/* Units (read-only) */}
-        <td>{entry.electricityUnitsConsumed || "-"}</td>
-
-        {/* Elec Total (read-only) */}
-        <td>
-          {entry.electricityTotal
-            ? `₹${entry.electricityTotal.toLocaleString()}`
-            : "-"}
-        </td>
-
-        {/* Water Bill */}
-        <td>
-          <input
-            type="number"
-            name="waterBill"
-            defaultValue={entry.waterBill || ""}
-            step="0.01"
-            placeholder="₹0"
-            className="ledger-table-input"
-          />
-        </td>
-
-        {/* Rent Amount */}
-        <td>
-          <input
-            type="number"
-            name="rentAmount"
-            defaultValue={entry.rentAmount || ""}
-            step="0.01"
-            placeholder="₹0"
-            className="ledger-table-input"
-          />
-        </td>
-
-        {/* Debit Amount */}
-        <td>
-          <input
-            type="number"
-            name="debitAmount"
-            defaultValue={entry.debitAmount || ""}
-            step="0.01"
-            placeholder="₹0"
-            className="ledger-table-input"
-          />
-        </td>
-
-        {/* Credit Amount */}
-        <td>
-          <input
-            type="number"
-            name="creditAmount"
-            defaultValue={entry.creditAmount || ""}
-            step="0.01"
-            placeholder="₹0"
-            className="ledger-table-input"
-          />
-        </td>
-
-        {/* Payment Method Dropdown */}
-        <td>
-          <select
-            name="paymentMethod"
-            defaultValue={entry.paymentMethod || ""}
-            className="ledger-table-input"
-          >
-            <option value="">-</option>
-            <option value="UPI">UPI</option>
-            <option value="CASH">Cash</option>
-            <option value="BANK_TRANSFER">Bank Transfer</option>
-          </select>
-        </td>
-
-        {/* Proof - Editable with upload */}
-        <td>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "4px",
-              minWidth: "120px",
-            }}
-          >
-            {uploadedProofUrl && (
-              <S3FileLink fileUrl={uploadedProofUrl}>📷 Current</S3FileLink>
-            )}
-            <input
-              type="file"
-              accept="image/*,application/pdf"
-              onChange={handleFileSelect}
-              disabled={isUploading}
-              style={{ fontSize: "0.80em" }}
-            />
-            {isUploading && (
-              <span style={{ fontSize: "0.75em", color: "#666" }}>
-                Uploading...
-              </span>
-            )}
-            {uploadError && (
-              <span style={{ fontSize: "0.75em", color: "red" }}>
-                {uploadError}
-              </span>
-            )}
-
-            {/* Hidden input to store S3 URL */}
-            <input type="hidden" name="paymentProof" value={uploadedProofUrl} />
-          </div>
-        </td>
-
-        {/* Verified Status */}
-        <td>
-          {isVerified ? (
-            <span style={{ color: "#16a34a", fontWeight: 600 }}>
-              ✓ Verified
-            </span>
-          ) : !isLandlord && onVerify ? (
-            <button
-              onClick={() => onVerify(entry.id)}
-              style={{
-                padding: "4px 10px",
-                background: "#2563eb",
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-              }}
-            >
-              ✓ Verify
-            </button>
-          ) : (
-            <span style={{ color: "#9ca3af" }}>-</span>
-          )}
-        </td>
-
-        {/* Action Buttons */}
-        {isLandlord && (
-          <td>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="ledger-save-button"
-              style={{ marginRight: "4px" }}
-            >
-              ✅ Save
-            </button>
-            <button
-              type="button"
-              onClick={onCancelEdit}
-              className="ledger-cancel-button"
-            >
-              ❌ Cancel
-            </button>
-          </td>
-        )}
-      </tr>
-    );
-  }
-
-  /**
-   * DISPLAY MODE RENDERING
-   * WHY: Default view - just shows data, no inputs
-   * WHEN: isEditing = false
-   */
-  return (
-    <tr className={isVerified ? "verified-row" : ""}>
-      {isLandlord && (
-        <td>
-          {!isVerified && (
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={onToggleSelect}
-            />
-          )}
-        </td>
-      )}
-      <td>{new Date(entry.entryDate).toLocaleDateString()}</td>
-      <td>{entry.description}</td>
-
-      {/* METER READING FIELDS */}
-      <td>{entry.electricityCurrentReading || "-"}</td>
-      <td>{entry.electricityRate ? `₹${entry.electricityRate}` : "-"}</td>
-      <td>{entry.electricityUnitsConsumed || "-"}</td>
-      <td>
-        {entry.electricityTotal
-          ? `₹${entry.electricityTotal.toLocaleString()}`
-          : "-"}
-      </td>
-
-      {/* BILL COMPONENTS */}
-      <td>{entry.waterBill ? `₹${entry.waterBill.toLocaleString()}` : "-"}</td>
-      <td>
-        {entry.rentAmount ? `₹${entry.rentAmount.toLocaleString()}` : "-"}
-      </td>
-
-      {/* TOTALS */}
-      <td>
-        {entry.debitAmount ? `₹${entry.debitAmount.toLocaleString()}` : "-"}
-      </td>
-      <td>
-        {entry.creditAmount ? `₹${entry.creditAmount.toLocaleString()}` : "-"}
-      </td>
-      <td>{entry.paymentMethod || "-"}</td>
-      <td>
-        {entry.paymentProof ? <S3FileLink fileUrl={entry.paymentProof} /> : "-"}
-      </td>
-      <td>
-        {isVerified ? (
-          <span style={{ color: "#16a34a", fontWeight: 600 }}>✓ Verified</span>
-        ) : !isLandlord && onVerify ? (
-          <button
-            onClick={() => onVerify(entry.id)}
-            style={{
-              padding: "4px 10px",
-              background: "#2563eb",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-            }}
-          >
-            ✓ Verify
-          </button>
-        ) : (
-          <span style={{ color: "#9ca3af" }}>-</span>
-        )}
-      </td>
-
-      {/* ACTION BUTTONS */}
-      {isLandlord && (
-        <td>
-          {!isVerified && canEdit && (
-            <>
-              {/* EDIT BUTTON - Only show if entry can be edited */}
-              <button
-                onClick={onStartEdit}
-                className="ledger-edit-button"
-                style={{ marginRight: "4px" }}
-                title="Edit this entry"
-              >
-                ✏️ Edit
-              </button>
-
-              {/* DELETE BUTTON */}
-              <button onClick={onDelete} className="ledger-delete-button">
-                Delete
-              </button>
-            </>
-          )}
-
-          {/* DISABLED EDIT BUTTON - Show when entry cannot be edited */}
-          {!isVerified && !canEdit && (
-            <>
-              <button
-                disabled
-                className="ledger-edit-button-disabled"
-                title="Cannot edit: 24 hours have passed"
-                style={{ marginRight: "4px" }}
-              >
-                ✏️ Edit
-              </button>
-
-              {/* DELETE still works even after 24hr */}
-              <button onClick={onDelete} className="ledger-delete-button">
-                Delete
-              </button>
-            </>
-          )}
-        </td>
-      )}
-    </tr>
   );
 }

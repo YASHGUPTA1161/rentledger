@@ -4,9 +4,10 @@ import { useState } from "react";
 import { TenantBills } from "./TenantBills";
 import { TenantDocuments } from "./TenantDocuments";
 import { TenantMaintenance } from "./TenantMaintenance";
-// Reuse the landlord's ActivityLog — it's a pure read-only display component
 import { ActivityLog } from "@/app/dashboard/landlord/properties/[id]/ActivityLog";
+import { TENANT_TABS, type TenantTabId } from "./components/constants";
 
+// ─── Types ────────────────────────────────────────────────────
 interface TenantTabsProps {
   propertyId: string;
   tenancyId: string;
@@ -17,6 +18,11 @@ interface TenantTabsProps {
   activityLogs: Record<string, unknown>[];
 }
 
+// ─── TenantTabs ───────────────────────────────────────────────
+// Sidebar nav + tab content switcher for the tenant dashboard.
+// Tab labels & order → edit in ./components/constants.ts TENANT_TABS
+// ─────────────────────────────────────────────────────────────
+
 export function TenantTabs({
   propertyId,
   tenancyId,
@@ -26,69 +32,34 @@ export function TenantTabs({
   maintenanceRequests,
   activityLogs,
 }: TenantTabsProps) {
-  const [activeTab, setActiveTab] = useState("bills");
-
-  const tabs = [
-    { id: "bills", label: "Bills & Ledger", icon: "💰" },
-    { id: "documents", label: "Documents", icon: "📄" },
-    { id: "maintenance", label: "Issues", icon: "🔧" },
-    { id: "activity", label: "Activity Log", icon: "📝" },
-  ];
+  const [activeTab, setActiveTab] = useState<TenantTabId>(TENANT_TABS[0].id);
 
   return (
-    <div className="flex gap-6" style={{ marginTop: "2rem" }}>
-      {/* Sidebar */}
-      <div className="w-64 border-r pr-6">
-        {/* Tenancy Info Card */}
-        <div
-          style={{
-            background: "#f0fdf4",
-            borderRadius: "8px",
-            padding: "12px",
-            marginBottom: "16px",
-            border: "1px solid #bbf7d0",
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              fontSize: "0.75rem",
-              color: "#15803d",
-              fontWeight: 600,
-            }}
-          >
-            ACTIVE TENANCY
-          </p>
-          <p
-            style={{
-              margin: "4px 0 0",
-              fontSize: "0.875rem",
-              color: "#166534",
-            }}
-          >
+    <div className="tenant-tabs-layout">
+      {/* ── Sidebar ─────────────────────────────────── */}
+      <aside className="tenant-tabs-sidebar">
+        {/* Active tenancy summary card */}
+        <div className="tenant-active-card">
+          <p className="tenant-active-label">ACTIVE TENANCY</p>
+          <p className="tenant-active-rent">
             Rent: ₹{(tenancy.monthlyRent as number).toLocaleString()}/mo
           </p>
         </div>
 
-        {/* Tab Buttons */}
-        {tabs.map((tab) => (
+        {/* Tab nav buttons — labels from TENANT_TABS constant */}
+        {TENANT_TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`w-full text-left px-4 py-3 rounded mb-2 flex items-center gap-3 ${
-              activeTab === tab.id
-                ? "bg-blue-600 text-white"
-                : "hover:bg-gray-100"
-            }`}
+            className={`tenant-tab-btn ${activeTab === tab.id ? "tenant-tab-btn--active" : ""}`}
           >
-            <span>{tab.icon}</span>
-            <span>{tab.label}</span>
+            {tab.label}
           </button>
         ))}
-      </div>
+      </aside>
 
-      {/* Content */}
-      <div className="flex-1">
+      {/* ── Content ─────────────────────────────────── */}
+      <main className="tenant-tabs-content">
         {activeTab === "bills" && (
           <TenantBills
             propertyId={propertyId}
@@ -111,7 +82,7 @@ export function TenantTabs({
             activityLogs={activityLogs as never[]}
           />
         )}
-      </div>
+      </main>
     </div>
   );
 }
