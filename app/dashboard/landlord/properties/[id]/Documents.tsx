@@ -100,15 +100,29 @@ export function Documents({
         return;
       }
 
+      console.log("[DEBUG] handleSubmit fired", {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        propertyId,
+      });
+
       toast.loading("Uploading...");
+      console.log("[DEBUG] calling handleFileUpload...");
       const s3Url = await handleFileUpload(file);
+      console.log("[DEBUG] handleFileUpload returned:", s3Url);
 
       formData.append("fileUrl", s3Url);
       formData.append("fileSize", file.size.toString());
       formData.append("mimeType", file.type);
       formData.append("propertyId", propertyId);
 
+      console.log("[DEBUG] calling uploadDocument server action...", {
+        propertyId,
+        s3Url,
+      });
       const result = await uploadDocument(formData);
+      console.log("[DEBUG] uploadDocument result:", result);
 
       toast.dismiss();
       if (result.success) {
@@ -116,12 +130,13 @@ export function Documents({
         setShowForm(false);
         window.location.reload();
       } else {
+        console.error("[DEBUG] Server action returned error:", result.error);
         toast.error(result.error || "Failed");
       }
     } catch (error) {
+      console.error("[DEBUG] CAUGHT ERROR in handleSubmit:", error);
       toast.dismiss();
       toast.error("Upload failed");
-      console.error(error);
     } finally {
       setIsUploading(false);
     }
