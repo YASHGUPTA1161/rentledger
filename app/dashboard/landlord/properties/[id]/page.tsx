@@ -3,6 +3,9 @@ import * as jose from "jose";
 import db from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { PropertyTabs } from "./PropertyTabs";
+import { getDocuments } from "./document-actions";
+import { getMaintenanceRequests } from "./maintenance-actions";
+import { getActivityLogs } from "./activity-actions";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -54,7 +57,16 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         },
       },
     },
+
     orderBy: { month: "desc" },
+  });
+  // Fetch documents
+  const documentsData = await getDocuments(id);
+
+  // Fetch tenancies for document form
+  const tenancies = await db.tenancy.findMany({
+    where: { propertyId: id },
+    include: { tenant: true },
   });
 
   // ============================================
@@ -151,6 +163,50 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     })),
   }));
 
+  // Serialize tenancies (convert Decimal to number)
+  const serializedTenancies = tenancies.map((tenancy) => ({
+    id: tenancy.id,
+    tenant: {
+      id: tenancy.tenant.id,
+      fullName: tenancy.tenant.fullName,
+    },
+    monthlyRent: tenancy.monthlyRent.toNumber(),
+    securityDeposit: tenancy.securityDeposit.toNumber(),
+  }));
+
+  // Fetch + serialize maintenance requests
+  const maintenanceData = await getMaintenanceRequests(id);
+  const serializedMaintenance = (maintenanceData.requests || []).map(
+    (req: Record<string, unknown>) => ({
+      ...req,
+      requestedAt:
+        req.requestedAt instanceof Date
+          ? req.requestedAt.toISOString()
+          : req.requestedAt,
+      completedAt:
+        req.completedAt instanceof Date ? req.completedAt.toISOString() : null,
+      createdAt:
+        req.createdAt instanceof Date
+          ? req.createdAt.toISOString()
+          : req.createdAt,
+      updatedAt:
+        req.updatedAt instanceof Date ? req.updatedAt.toISOString() : null,
+    }),
+  );
+
+  // Fetch + serialize activity logs
+  const logsData = await getActivityLogs(id);
+  const serializedLogs = (logsData.logs || []).map(
+    (log: Record<string, unknown>) => ({
+      ...log,
+      date: log.date instanceof Date ? log.date.toISOString() : log.date,
+      createdAt:
+        log.createdAt instanceof Date
+          ? log.createdAt.toISOString()
+          : log.createdAt,
+    }),
+  );
+
   return (
     <div style={{ padding: "2rem" }}>
       <h1>📍 {property.address}</h1>
@@ -158,6 +214,10 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         propertyId={property.id}
         activeTenancy={serializedTenancy}
         bills={serializedBills}
+        documents={documentsData.documents || []}
+        tenancies={serializedTenancies}
+        maintenanceRequests={serializedMaintenance}
+        activityLogs={serializedLogs}
       />
     </div>
   );

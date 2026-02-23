@@ -113,6 +113,8 @@ model Landlord {
   maintenanceRequests MaintenanceRequest[]
   paymentReminders    PaymentReminder[]
 
+  inviteTokens InviteToken[]
+
   @@index([userId])
 }
 
@@ -124,8 +126,27 @@ model Tenant {
   address    String?
   createdAt  DateTime @default(now())
 
+  // Contact
+  phone                String?
+  email                String?
+
+  // Emergency contact
+  emergencyContact      String?
+  emergencyContactPhone String?
+
+  // ID verification
+  idType               String?   // "Aadhaar" | "PAN" | "Passport"
+  idNumber             String?
+
+  // Police verification
   policeVerificationNumber String?
   policeVerificationDate   DateTime?
+
+  // Personal details
+  dateOfBirth          DateTime?
+  occupation           String?
+  workplace            String?
+  moveInDate           DateTime?
 
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   landlord            Landlord             @relation(fields: [landlordId], references: [id])
@@ -134,6 +155,7 @@ model Tenant {
   documents           Document[]
   maintenanceRequests MaintenanceRequest[]
   paymentReminders    PaymentReminder[]
+  inviteTokens InviteToken[]
 
   @@index([userId])
   @@index([landlordId])
@@ -152,6 +174,9 @@ model Property {
   bills               Bill[]
   maintenanceRequests MaintenanceRequest[]
   activityLogs        ActivityLog[]        // ← ADD THIS LINE
+  documents           Document[]  
+
+  inviteTokens InviteToken[]
 }
 
 model Tenancy {
@@ -330,24 +355,36 @@ model LedgerEntry {
 
 
 model Document {
-  id           String       @id @default(uuid())
+  id           String   @id @default(uuid())
   landlordId   String
-  tenantId     String
+  propertyId   String
+  tenantId     String?
   billId       String?
   tenancyId    String?
-  documentType DocumentType
+  
+  // Flexible fields (user-defined)
+  documentName String       // Auto-capitalized
+  category     String?      // Optional
+  description  String?      // Optional
+  
+  // File metadata
   fileUrl      String
-  generatedAt  DateTime
-  createdAt    DateTime     @default(now())
-
-  landlord Landlord @relation(fields: [landlordId], references: [id])
-  tenant   Tenant   @relation(fields: [tenantId], references: [id])
-  bill     Bill?    @relation(fields: [billId], references: [id])
-  tenancy  Tenancy? @relation(fields: [tenancyId], references: [id])
+  fileSize     Int?
+  mimeType     String?
+  
+  // Dates
+  uploadedAt   DateTime     @default(now())
+  documentDate DateTime?
+  
+  // Relations
+  landlord Landlord  @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  tenant   Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bill     Bill?     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  tenancy  Tenancy?  @relation(fields: [tenancyId], references: [id], onDelete: Cascade)
+  property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([landlordId])
-  @@index([tenantId])
-  @@index([billId])
+  @@index([propertyId])
 }
 
 /////////////////////
@@ -389,17 +426,27 @@ model Notification {
 model MaintenanceRequest {
   id         String @id @default(uuid())
   landlordId String
-  tenantId   String
+  tenantId   String?
   propertyId String
 
+  // Issue details
+  title       String
   description String
+  category    String?
+  priority    String            @default("MEDIUM")
+
+  // Status tracking
   status      MaintenanceStatus @default(requested)
+  resolutionNotes String?
+
+  // Dates
   requestedAt DateTime          @default(now())
-  updatedAt   DateTime?
+  completedAt DateTime?
   createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   landlord Landlord @relation(fields: [landlordId], references: [id])
-  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  tenant   Tenant?  @relation(fields: [tenantId], references: [id])
   property Property @relation(fields: [propertyId], references: [id])
 
   @@index([landlordId])
@@ -427,4 +474,22 @@ model ActivityLog {
   @@index([propertyId])
   @@index([date])
   @@index([type])
+}
+model InviteToken {
+  id         String    @id @default(uuid())
+  token      String    @unique @default(uuid())
+  email      String
+  tenantId   String
+  landlordId String
+  propertyId String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  landlord Landlord @relation(fields: [landlordId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([token])
+  @@index([email])
 }

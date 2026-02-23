@@ -299,3 +299,291 @@ img {
 .ledger-proof-link:hover {
   text-decoration: underline;
 }
+
+/* ========================================
+   LEDGER — REFACTORED COMPONENT CLASSES
+   (replaces all inline styles in EntryRow,
+    NewEntryRow, LedgerTotals)
+   ======================================== */
+
+/* Container */
+.ledger-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ledger-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  padding: 8px 0;
+}
+
+/* Table rows */
+.ledger-row--verified {
+  background-color: #f0fdf4;
+  opacity: 0.85;
+}
+
+.ledger-editing-row {
+  background-color: #fffbeb;
+}
+
+.ledger-new-entry-row {
+  background-color: #f8fafc;
+}
+
+/* Inputs inside table cells */
+.ledger-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  outline: none;
+  background: #fff;
+}
+
+.ledger-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.ledger-input--sm {
+  width: 90px;
+}
+.ledger-input--xs {
+  width: 75px;
+}
+
+/* Muted cell text (auto-calculated, read-only) */
+.ledger-cell--muted {
+  color: #9ca3af;
+  font-size: 0.88rem;
+}
+
+/* Auto-calculated total cell — highlights when value > 0 */
+.ledger-cell--total-active {
+  font-weight: 700;
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Verified badge */
+.ledger-verified {
+  color: #16a34a;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* Totals row */
+.ledger-totals-row {
+  background-color: #f9fafb;
+  font-weight: 700;
+  border-top: 2px solid #e5e7eb;
+}
+
+.ledger-totals-label {
+  text-align: right;
+  font-size: 0.85rem;
+  color: #374151;
+  padding-right: 8px;
+}
+
+.ledger-totals-amount {
+  font-size: 0.9rem;
+  color: #111827;
+}
+
+.ledger-totals-remaining {
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+/* Upload cell */
+.ledger-upload-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.ledger-file-input {
+  font-size: 0.8rem;
+}
+
+.ledger-upload-status {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.ledger-upload-success {
+  font-size: 0.75rem;
+  color: #16a34a;
+}
+
+.ledger-upload-error {
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+
+/* ── Unified button system ─────────────────────────────── */
+/* Base button — all ledger buttons inherit this */
+.ledger-btn {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  transition: opacity 0.15s;
+}
+
+.ledger-btn:hover {
+  opacity: 0.88;
+}
+.ledger-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Variants */
+.ledger-btn--add {
+  background: #6366f1;
+  color: #fff;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+
+.ledger-btn--save {
+  background: #16a34a;
+  color: #fff;
+  margin-right: 4px;
+}
+
+.ledger-btn--cancel {
+  background: #6b7280;
+  color: #fff;
+}
+
+.ledger-btn--edit {
+  background: #f59e0b;
+  color: #fff;
+  margin-right: 4px;
+}
+
+.ledger-btn--edit-disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  margin-right: 4px;
+}
+
+.ledger-btn--delete {
+  background: #ef4444;
+  color: #fff;
+}
+
+.ledger-btn--verify {
+  background: #2563eb;
+  color: #fff;
+}
+
+.ledger-btn--delete-confirm {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* Delete confirmation toast */
+.ledger-delete-confirm-text {
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.ledger-delete-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ========================================
+   TENANT TABS LAYOUT
+   (replaces all inline styles in TenantTabs.tsx)
+   ======================================== */
+
+.tenant-tabs-layout {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+/* Sidebar */
+.tenant-tabs-sidebar {
+  width: 16rem;
+  border-right: 1px solid #e5e7eb;
+  padding-right: 1.5rem;
+  flex-shrink: 0;
+}
+
+/* Active tenancy info card */
+.tenant-active-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.tenant-active-label {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #15803d;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.tenant-active-rent {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  color: #166534;
+}
+
+/* Tab nav buttons */
+.tenant-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #374151;
+  transition: background 0.15s;
+}
+
+.tenant-tab-btn:hover {
+  background: #f3f4f6;
+}
+
+.tenant-tab-btn--active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.tenant-tab-btn--active:hover {
+  background: #1d4ed8;
+}
+
+/* Content area */
+.tenant-tabs-content {
+  flex: 1;
+  min-width: 0;
+}

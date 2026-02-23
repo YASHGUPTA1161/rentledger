@@ -5,9 +5,10 @@ import * as jose from "jose";
 // GET /api/properties/[id] - Get single property
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  console.log(`🔍 GET /api/properties/${params.id}`);
+  const { id } = await params;
+  console.log(`🔍 GET /api/properties/${id}`);
 
   try {
     const landlordId = await getLandlordIdFromRequest(request);
@@ -15,7 +16,7 @@ export async function GET(
     // Find property by ID AND landlordId (security!)
     const property = await db.property.findFirst({
       where: {
-        id: params.id,
+        id,
         landlordId, // ← Ensures you can ONLY get YOUR properties
       },
     });
@@ -42,9 +43,10 @@ export async function GET(
 // PUT /api/properties/[id] - Update property
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  console.log(`✏️ PUT /api/properties/${params.id}`);
+  const { id } = await params;
+  console.log(`✏️ PUT /api/properties/${id}`);
 
   try {
     const landlordId = await getLandlordIdFromRequest(request);
@@ -55,7 +57,7 @@ export async function PUT(
 
     // First check if property exists AND belongs to this landlord
     const existing = await db.property.findFirst({
-      where: { id: params.id, landlordId },
+      where: { id, landlordId },
     });
 
     if (!existing) {
@@ -68,7 +70,7 @@ export async function PUT(
 
     // Update the property
     const updated = await db.property.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         address: address?.trim() || existing.address,
         description: description?.trim() || existing.description,
@@ -89,16 +91,17 @@ export async function PUT(
 // DELETE /api/properties/[id] - Delete property
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  console.log(`🗑️ DELETE /api/properties/${params.id}`);
+  const { id } = await params;
+  console.log(`🗑️ DELETE /api/properties/${id}`);
 
   try {
     const landlordId = await getLandlordIdFromRequest(request);
 
     // Check if property exists AND belongs to this landlord
     const existing = await db.property.findFirst({
-      where: { id: params.id, landlordId },
+      where: { id, landlordId },
     });
 
     if (!existing) {
@@ -111,10 +114,10 @@ export async function DELETE(
 
     // Delete the property
     await db.property.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
-    console.log("✅ Property deleted:", params.id);
+    console.log("✅ Property deleted:", id);
     return NextResponse.json({
       success: true,
       message: "Property deleted successfully",

@@ -8,15 +8,46 @@ import { Documents } from "./Documents";
 import { Maintenance } from "./Maintenance";
 import { ActivityLog } from "./ActivityLog";
 
+interface Tenant {
+  id: string;
+  fullName: string;
+}
+
+interface Tenancy {
+  id: string;
+  tenant: Tenant;
+}
+
+interface Document {
+  id: string;
+  documentName: string;
+  category: string | null;
+  description: string | null;
+  fileUrl: string;
+  fileSize: number | null;
+  uploadedAt: Date;
+  tenant?: { fullName: string } | null;
+}
+
+interface PropertyTabsProps {
+  propertyId: string;
+  activeTenancy: Record<string, unknown> | null;
+  bills: Record<string, unknown>[];
+  documents: Document[];
+  tenancies: Tenancy[];
+  maintenanceRequests: Record<string, unknown>[];
+  activityLogs: Record<string, unknown>[];
+}
+
 export function PropertyTabs({
   propertyId,
   activeTenancy,
-  bills, // ← ADD THIS
-}: {
-  propertyId: string;
-  activeTenancy: any;
-  bills: any[]; // ← ADD THIS
-}) {
+  bills,
+  documents,
+  tenancies,
+  maintenanceRequests,
+  activityLogs,
+}: PropertyTabsProps) {
   const [activeTab, setActiveTab] = useState("overview");
 
   const tabs = [
@@ -50,20 +81,45 @@ export function PropertyTabs({
 
       {/* Content */}
       <div className="flex-1">
-        {activeTab === "overview" && <Overview propertyId={propertyId} />}
+        {activeTab === "overview" && (
+          <Overview
+            propertyId={propertyId}
+            activeTenancy={activeTenancy}
+            bills={bills}
+            documents={documents as unknown as Record<string, unknown>[]}
+            maintenanceRequests={maintenanceRequests}
+            activityLogs={activityLogs}
+          />
+        )}
         {activeTab === "tenancy" && (
           <Tenancy propertyId={propertyId} activeTenancy={activeTenancy} />
         )}
         {activeTab === "bills" && (
           <BillsLedger
             propertyId={propertyId}
-            tenancyId={activeTenancy?.id}
+            tenancyId={(activeTenancy?.id as string) || ""}
             bills={bills}
           />
         )}
-        {activeTab === "documents" && <Documents propertyId={propertyId} />}
-        {activeTab === "maintenance" && <Maintenance propertyId={propertyId} />}
-        {activeTab === "activity" && <ActivityLog propertyId={propertyId} />}
+        {activeTab === "documents" && (
+          <Documents
+            propertyId={propertyId}
+            initialDocuments={documents}
+            tenancies={tenancies}
+          />
+        )}
+        {activeTab === "maintenance" && (
+          <Maintenance
+            propertyId={propertyId}
+            maintenanceRequests={maintenanceRequests as never[]}
+          />
+        )}
+        {activeTab === "activity" && (
+          <ActivityLog
+            propertyId={propertyId}
+            activityLogs={activityLogs as never[]}
+          />
+        )}
       </div>
     </div>
   );

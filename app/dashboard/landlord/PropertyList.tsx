@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import { updateProperty, deleteProperty } from "./actions";
 
 interface Property {
@@ -146,13 +147,65 @@ export function PropertyList({ properties }: { properties: Property[] }) {
                       cursor: "pointer",
                     }}
                     onClick={(e) => {
-                      if (
-                        !confirm(
-                          "Are you sure you want to delete this property?",
-                        )
-                      ) {
-                        e.preventDefault();
+                      e.preventDefault();
+
+                      // CAPTURE FORM REFERENCE IMMEDIATELY
+                      // React nullifies event properties after handler completes
+                      // So we must grab the form ref BEFORE showing the toast
+                      const form = e.currentTarget.closest("form");
+
+                      if (!form) {
+                        console.error("Form not found");
+                        return;
                       }
+
+                      toast(
+                        (t) => (
+                          <div>
+                            <p
+                              style={{ marginBottom: "8px", fontWeight: "500" }}
+                            >
+                              Delete this property?
+                            </p>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <button
+                                onClick={() => {
+                                  toast.dismiss(t.id);
+                                  // Use captured form reference (not e.currentTarget)
+                                  form.requestSubmit();
+                                }}
+                                style={{
+                                  padding: "6px 12px",
+                                  backgroundColor: "#ef4444",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Delete
+                              </button>
+                              <button
+                                onClick={() => toast.dismiss(t.id)}
+                                style={{
+                                  padding: "6px 12px",
+                                  backgroundColor: "#6b7280",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ),
+                        {
+                          duration: 5000,
+                          position: "bottom-right",
+                        },
+                      );
                     }}
                   >
                     🗑️ Delete
