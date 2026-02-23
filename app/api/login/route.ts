@@ -43,8 +43,13 @@ export async function POST(request: Request) {
     // ---------------------------------------------------------
     // We check BOTH:
     // A) Does user exist? (!user)
-    // B) Does password match? (bcrypt.compare)
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    // B) Does user have a password? (null = OAuth-only account, no password login)
+    // C) Does password match? (bcrypt.compare)
+    if (
+      !user ||
+      !user.password ||
+      !(await bcrypt.compare(password, user.password))
+    ) {
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }, // 401 = Unauthorized

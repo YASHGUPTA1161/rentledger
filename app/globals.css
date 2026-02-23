@@ -317,6 +317,11 @@ img {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  padding: 8px 0;
 }
 
 /* Table rows */

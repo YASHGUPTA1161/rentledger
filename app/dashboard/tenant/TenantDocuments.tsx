@@ -16,20 +16,39 @@ export function TenantDocuments({
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // S3 file upload handler — same pattern as landlord Documents.tsx
+  // S3 file upload handler — 2-step: get presigned URL → PUT to S3 directly
   const handleFileUpload = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append("file", file);
+    const sanitizedFilename = file.name
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9._-]/g, "")
+      .substring(0, 200);
 
-    const res = await fetch("/api/upload", {
+    // Step 1: Get presigned PUT URL from our API
+    const res = await fetch("/api/s3/upload", {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename: sanitizedFilename,
+        contentType: file.type,
+        size: file.size,
+      }),
     });
 
-    if (!res.ok) throw new Error("Upload failed");
+    if (!res.ok) throw new Error("Failed to get upload URL");
 
-    const data = await res.json();
-    return data.url || data.fileUrl;
+    const { presignedUrl, key } = await res.json();
+
+    // Step 2: PUT file directly to S3 using the presigned URL
+    const uploadRes = await fetch(presignedUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type },
+    });
+
+    if (!uploadRes.ok) throw new Error("Failed to upload to S3");
+
+    // Step 3: Return the public view URL via our signed view endpoint
+    return `/api/s3/view?key=${encodeURIComponent(key)}`;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
