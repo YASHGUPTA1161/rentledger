@@ -23,6 +23,11 @@ export function TenantDocuments({
       .replace(/[^a-zA-Z0-9._-]/g, "")
       .substring(0, 200);
 
+    // DEBUG
+    alert(
+      `[DEBUG] Step 1: Requesting presigned URL\nFile: ${sanitizedFilename}\nType: ${file.type}\nSize: ${file.size} bytes`,
+    );
+
     // Step 1: Get presigned PUT URL from our API
     const res = await fetch("/api/s3/upload", {
       method: "POST",
@@ -34,20 +39,52 @@ export function TenantDocuments({
       }),
     });
 
-    if (!res.ok) throw new Error("Failed to get upload URL");
+    // DEBUG
+    alert(
+      `[DEBUG] Step 1 Response:\nStatus: ${res.status} ${res.statusText}\nOK: ${res.ok}`,
+    );
 
-    const { presignedUrl, key } = await res.json();
+    if (!res.ok) {
+      const errBody = await res.text();
+      alert(`[DEBUG] Step 1 FAILED\nResponse body: ${errBody}`);
+      throw new Error("Failed to get upload URL");
+    }
+
+    const responseJson = await res.json();
+    const { presignedUrl, key } = responseJson;
+
+    // DEBUG
+    alert(
+      `[DEBUG] Step 1 SUCCESS\nKey: ${key}\nPresigned URL starts with: ${presignedUrl?.substring(0, 80)}...`,
+    );
 
     // Step 2: PUT file directly to S3 using the presigned URL
+    // DEBUG
+    alert(`[DEBUG] Step 2: Uploading file directly to S3...`);
+
     const uploadRes = await fetch(presignedUrl, {
       method: "PUT",
       body: file,
       headers: { "Content-Type": file.type },
     });
 
-    if (!uploadRes.ok) throw new Error("Failed to upload to S3");
+    // DEBUG
+    alert(
+      `[DEBUG] Step 2 S3 PUT Response:\nStatus: ${uploadRes.status} ${uploadRes.statusText}\nOK: ${uploadRes.ok}`,
+    );
+
+    if (!uploadRes.ok) {
+      const s3ErrBody = await uploadRes.text();
+      alert(
+        `[DEBUG] Step 2 FAILED (S3 PUT error)\nResponse: ${s3ErrBody?.substring(0, 300)}`,
+      );
+      throw new Error("Failed to upload to S3");
+    }
 
     // Step 3: Return the public view URL via our signed view endpoint
+    alert(
+      `[DEBUG] Step 2 SUCCESS! File uploaded to S3.\nReturning view URL for key: ${key}`,
+    );
     return `/api/s3/view?key=${encodeURIComponent(key)}`;
   };
 
@@ -70,9 +107,13 @@ export function TenantDocuments({
 
     try {
       // Upload file to S3 first
+      alert(`[DEBUG] Starting upload for file: ${file.name}`);
       const fileUrl = await handleFileUpload(file);
 
       // Then save document record
+      alert(
+        `[DEBUG] Step 3: Saving document record to DB\nfileUrl: ${fileUrl}\npropertyId: ${propertyId}`,
+      );
       const submitData = new FormData();
       submitData.set("propertyId", propertyId);
       submitData.set(
@@ -90,6 +131,9 @@ export function TenantDocuments({
 
       const result = await uploadTenantDocument(submitData);
 
+      // DEBUG
+      alert(`[DEBUG] Step 3 Server Action Result:\n${JSON.stringify(result)}`);
+
       if (result.success) {
         toast.success("Document uploaded!", { position: "bottom-right" });
         setShowUploadForm(false);
@@ -100,6 +144,8 @@ export function TenantDocuments({
         });
       }
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      alert(`[DEBUG] CAUGHT ERROR:\n${errMsg}`);
       console.error("Upload error:", error);
       toast.error("Failed to upload file", { position: "bottom-right" });
     }
