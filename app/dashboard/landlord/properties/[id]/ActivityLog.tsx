@@ -13,30 +13,26 @@ interface ActivityLogProps {
   activityLogs: ActivityLogEntry[];
 }
 
-// ─── Icon + color per type ───
+// ─── Dark-theme icon + bg per event type ───
+const TYPE_CONFIG: Record<string, { icon: string; bg: string }> = {
+  MAINTENANCE_RAISED: { icon: "🔧", bg: "#2a1515" },
+  MAINTENANCE_UPDATED: { icon: "🔄", bg: "#2a2010" },
+  MAINTENANCE_COMPLETED: { icon: "✅", bg: "#0d2018" },
+  MAINTENANCE_DELETED: { icon: "🗑️", bg: "#1a1a1a" },
+  DOCUMENT_UPLOADED: { icon: "📄", bg: "#0f1b2d" },
+  DOCUMENT_DELETED: { icon: "📄", bg: "#1a1a1a" },
+  BILL_CREATED: { icon: "💰", bg: "#1e1030" },
+  PAYMENT_ADDED: { icon: "💳", bg: "#0d2018" },
+  TENANT_ADDED: { icon: "👤", bg: "#0d1f24" },
+  TENANCY_CREATED: { icon: "🏠", bg: "#0d1f24" },
+  PROPERTY_UPDATED: { icon: "🏠", bg: "#161830" },
+};
 
-const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string }> =
-  {
-    MAINTENANCE_RAISED: { icon: "🔧", color: "#dc2626", bg: "#fef2f2" },
-    MAINTENANCE_UPDATED: { icon: "🔄", color: "#d97706", bg: "#fffbeb" },
-    MAINTENANCE_COMPLETED: { icon: "✅", color: "#059669", bg: "#ecfdf5" },
-    MAINTENANCE_DELETED: { icon: "🗑️", color: "#6b7280", bg: "#f9fafb" },
-    DOCUMENT_UPLOADED: { icon: "📄", color: "#2563eb", bg: "#eff6ff" },
-    DOCUMENT_DELETED: { icon: "📄", color: "#6b7280", bg: "#f9fafb" },
-    BILL_CREATED: { icon: "💰", color: "#7c3aed", bg: "#f5f3ff" },
-    PAYMENT_ADDED: { icon: "💳", color: "#059669", bg: "#ecfdf5" },
-    TENANT_ADDED: { icon: "👤", color: "#0891b2", bg: "#ecfeff" },
-    TENANCY_CREATED: { icon: "🏠", color: "#0891b2", bg: "#ecfeff" },
-    PROPERTY_UPDATED: { icon: "🏠", color: "#6366f1", bg: "#eef2ff" },
-  };
-
-const DEFAULT_CONFIG = { icon: "📌", color: "#6b7280", bg: "#f9fafb" };
+const DEFAULT_CONFIG = { icon: "📌", bg: "#1a1a1a" };
 
 // ─── Group logs by date ───
-
 function groupByDate(logs: ActivityLogEntry[]) {
   const groups: Record<string, ActivityLogEntry[]> = {};
-
   for (const log of logs) {
     const dateKey = new Date(log.date).toLocaleDateString("en-IN", {
       day: "numeric",
@@ -46,119 +42,52 @@ function groupByDate(logs: ActivityLogEntry[]) {
     if (!groups[dateKey]) groups[dateKey] = [];
     groups[dateKey].push(log);
   }
-
   return groups;
 }
 
 // ─── Component ───
-
 export function ActivityLog({ activityLogs }: ActivityLogProps) {
   const grouped = groupByDate(activityLogs);
   const dateKeys = Object.keys(grouped);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Header */}
-      <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", margin: 0 }}>
-        Activity Log
-      </h2>
+    <div className="alog-wrap">
+      <h2 className="alog-heading">Activity Log</h2>
 
       {dateKeys.length === 0 ? (
-        <p style={{ color: "#9ca3af", textAlign: "center", padding: "40px 0" }}>
-          No activity recorded yet
-        </p>
+        <p className="alog-empty">No activity recorded yet</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div className="alog-groups">
           {dateKeys.map((dateKey) => (
-            <div key={dateKey}>
+            <div key={dateKey} className="alog-group">
               {/* Date header */}
-              <div
-                style={{
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  color: "#374151",
-                  marginBottom: "12px",
-                  paddingBottom: "4px",
-                  borderBottom: "1px solid #e5e7eb",
-                }}
-              >
-                {dateKey}
-              </div>
+              <div className="alog-date">{dateKey}</div>
 
-              {/* Timeline items */}
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0" }}
-              >
+              {/* Timeline rows */}
+              <div className="alog-timeline">
                 {grouped[dateKey].map((log, index) => {
                   const config = TYPE_CONFIG[log.type] || DEFAULT_CONFIG;
                   const isLast = index === grouped[dateKey].length - 1;
 
                   return (
-                    <div
-                      key={log.id}
-                      style={{
-                        display: "flex",
-                        gap: "12px",
-                        position: "relative",
-                      }}
-                    >
-                      {/* Timeline line + dot */}
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          width: "32px",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {/* Dot */}
+                    <div key={log.id} className="alog-row">
+                      {/* Dot + connector line */}
+                      <div className="alog-dot-col">
                         <div
-                          style={{
-                            width: "32px",
-                            height: "32px",
-                            borderRadius: "50%",
-                            backgroundColor: config.bg,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "0.875rem",
-                            flexShrink: 0,
-                          }}
+                          className="alog-dot"
+                          style={{ background: config.bg }}
                         >
                           {config.icon}
                         </div>
-                        {/* Line */}
-                        {!isLast && (
-                          <div
-                            style={{
-                              width: "2px",
-                              flex: 1,
-                              backgroundColor: "#e5e7eb",
-                              minHeight: "16px",
-                            }}
-                          />
-                        )}
+                        {!isLast && <div className="alog-line" />}
                       </div>
 
-                      {/* Content */}
+                      {/* Text content */}
                       <div
-                        style={{
-                          paddingBottom: isLast ? "0" : "16px",
-                          flex: 1,
-                        }}
+                        className={`alog-content${isLast ? " alog-content--last" : ""}`}
                       >
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: "0.875rem",
-                            color: "#111827",
-                            lineHeight: "32px",
-                          }}
-                        >
-                          {log.description}
-                        </p>
-                        <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>
+                        <p className="alog-desc">{log.description}</p>
+                        <span className="alog-time">
                           {new Date(log.date).toLocaleTimeString("en-IN", {
                             hour: "2-digit",
                             minute: "2-digit",

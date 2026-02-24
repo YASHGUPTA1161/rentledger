@@ -4,6 +4,9 @@ import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 
+// How long to keep activity logs — change this to adjust retention
+const LOG_RETENTION_DAYS = 7;
+
 // ─── Auth helper ───
 async function getAuthenticatedUser() {
   const cookieStore = await cookies();
@@ -44,15 +47,25 @@ export async function logActivity(
   }
 }
 
-// ─── GET logs for a property ───
+// ─── GET logs for a property (with automatic 30-day cleanup) ───
 export async function getActivityLogs(propertyId: string) {
   try {
     await getAuthenticatedUser();
 
+    // Auto-prune: silently delete entries older than LOG_RETENTION_DAYS.
+    // Runs every time the Activity Log tab is opened — no cron needed.
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - LOG_RETENTION_DAYS);
+
+    await prisma.activityLog.deleteMany({
+      where: { propertyId, date: { lt: cutoff } },
+    });
+
+    // Fetch remaining logs (already pruned above)
     const logs = await prisma.activityLog.findMany({
       where: { propertyId },
       orderBy: { date: "desc" },
-      take: 50,
+      take: 100,
     });
 
     return { success: true, logs };

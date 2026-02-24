@@ -60,17 +60,17 @@ export function PropertyTabs({
   ];
 
   return (
-    <div className="flex gap-6" style={{ marginTop: "2rem" }}>
+    <div className="property-layout">
       {/* Sidebar */}
-      <div className="w-64 border-r pr-6">
+      <div className="property-sidebar">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`w-full text-left px-4 py-3 rounded mb-2 flex items-center gap-3 ${
+            className={`property-tab ${
               activeTab === tab.id
-                ? "bg-blue-600 text-white"
-                : "hover:bg-gray-100"
+                ? "property-tab--active"
+                : "property-tab--idle"
             }`}
           >
             <span>{tab.icon}</span>
@@ -80,7 +80,7 @@ export function PropertyTabs({
       </div>
 
       {/* Content */}
-      <div className="flex-1">
+      <div className="property-content">
         {activeTab === "overview" && (
           <Overview
             propertyId={propertyId}

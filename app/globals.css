@@ -460,6 +460,61 @@ img {
   font-size: 0.85rem;
 }
 
+.ledger-btn--export {
+  background: #0f172a;
+  color: #94a3b8;
+  border: 1px solid #2a2a2a;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+}
+.ledger-btn--export:hover {
+  color: #fff;
+  border-color: #4b5563;
+  opacity: 1;
+}
+
+/* Groups export + add buttons in the ledger header */
+.ledger-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* Export dropdown */
+.export-wrap {
+  position: relative;
+}
+.export-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  min-width: 160px;
+  list-style: none;
+  padding: 0.3rem;
+  margin: 0;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.export-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.45rem 0.75rem;
+  background: none;
+  border: none;
+  color: #d1d5db;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+.export-option:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
 .ledger-btn--save {
   background: #16a34a;
   color: #fff;
@@ -507,6 +562,370 @@ img {
 .ledger-delete-confirm-actions {
   display: flex;
   gap: 8px;
+}
+
+/* ======================================
+   DOCUMENTS SECTION (dark theme)
+   ====================================== */
+.doc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.doc-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+/* Upload form */
+.doc-upload-form {
+  background: #111;
+  border: 1px solid #1f1f1f;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+.doc-form-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.doc-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 160px;
+}
+.doc-label {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+.doc-input {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #e5e7eb;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  transition: border-color 0.15s;
+}
+.doc-input:focus {
+  border-color: #2563eb;
+  outline: none;
+}
+.doc-input--file {
+  color: #6b7280;
+}
+.doc-submit-btn {
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+/* Document list */
+.doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.doc-card {
+  background: #111;
+  border: 1px solid #1f1f1f;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  transition: border-color 0.15s;
+}
+.doc-card:hover {
+  border-color: #2a2a2a;
+}
+.doc-card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.doc-card-info {
+  flex: 1;
+}
+.doc-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  margin: 0 0 0.3rem;
+}
+.doc-category-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  background: #1e3a5f;
+  color: #60a5fa;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+.doc-desc {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0 0 0.35rem;
+}
+.doc-meta {
+  display: flex;
+  gap: 0.85rem;
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+.doc-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  align-items: flex-start;
+}
+
+/* ======================================
+   ACTIVITY LOG (dark theme)
+   ====================================== */
+.alog-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.alog-heading {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+.alog-empty {
+  color: #6b7280;
+  text-align: center;
+  padding: 2rem 0;
+}
+.alog-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Date separator */
+.alog-date {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #1f1f1f;
+}
+
+/* Timeline */
+.alog-timeline {
+  display: flex;
+  flex-direction: column;
+}
+.alog-row {
+  display: flex;
+  gap: 0.75rem;
+  position: relative;
+}
+
+/* Icon column */
+.alog-dot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 32px;
+  flex-shrink: 0;
+}
+.alog-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.alog-line {
+  width: 2px;
+  flex: 1;
+  background: #1f1f1f;
+  min-height: 16px;
+}
+
+/* Text */
+.alog-content {
+  flex: 1;
+  padding-bottom: 1rem;
+}
+.alog-content--last {
+  padding-bottom: 0;
+}
+.alog-desc {
+  margin: 0 0 0.2rem;
+  font-size: 0.875rem;
+  color: #e5e7eb; /* ← was #111827 (near-black), now readable white */
+  line-height: 2;
+}
+.alog-time {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* ======================================
+   PROPERTY PAGE LAYOUT
+   ====================================== */
+.property-page {
+  padding: 1.5rem 2rem;
+  min-height: calc(100vh - 64px); /* 64px = nav height */
+  background: #09090b;
+  color: #e5e7eb;
+}
+.property-page h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 1.5rem;
+}
+
+/* Flex row: sidebar + content */
+.property-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: stretch; /* makes sidebar stretch to content height */
+  min-height: calc(100vh - 140px);
+}
+
+/* Sidebar */
+.property-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid #1f1f1f;
+  padding-right: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.property-tab {
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.1s;
+}
+.property-tab--active {
+  background: #2563eb;
+  color: #fff;
+}
+.property-tab--idle {
+  background: none;
+  color: #9ca3af;
+}
+.property-tab--idle:hover {
+  background: #1a1a1a;
+  color: #e5e7eb;
+}
+
+/* Content panel */
+.property-content {
+  flex: 1;
+  min-width: 0; /* prevent flex children overflowing */
+  overflow-x: hidden;
+}
+
+/* ======================================
+   BILL CARDS (dark theme)
+   ====================================== */
+.bill-card {
+  background: #111;
+  border: 1px solid #1f1f1f;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.bill-due {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0.2rem 0 0;
+}
+.bill-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1.5rem;
+  margin: 1rem 0;
+}
+.bill-field-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0 0 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bill-field-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  margin: 0;
+}
+.bill-totals-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+  border-top: 1px solid #1f1f1f;
+}
+.bill-total-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin: 0;
+}
+.bill-total-value--paid {
+  color: #4ade80;
+}
+.bill-total-value--remaining {
+  color: #f87171;
+}
+
+/* Ledger inside bill — horizontal scroll */
+.bill-ledger-wrap {
+  margin-top: 1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Empty state */
+.bill-empty-state {
+  background: #111;
+  border: 1px dashed #2a2a2a;
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+.bill-empty-text {
+  color: #9ca3af;
+  font-size: 1rem;
+  margin: 0 0 0.4rem;
+}
+.bill-empty-sub {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin: 0 0 1.5rem;
 }
 
 /* ========================================
@@ -646,8 +1065,13 @@ img {
   background: #2563eb;
   color: #fff;
   font-weight: 700;
+  font-size: 0.9rem;
   border: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 .nav-dropdown {
   position: absolute;

@@ -11,6 +11,7 @@ import {
 import { EntryRow } from "./components/ledger/EntryRow";
 import { NewEntryRow } from "./components/ledger/NewEntryRow";
 import { LedgerTotals } from "./components/ledger/LedgerTotals";
+import { LedgerExport } from "./LedgerExport";
 import {
   LEDGER_COLUMNS,
   LEDGER_LABELS,
@@ -149,17 +150,22 @@ export function LedgerTable({
     <div className="ledger-container">
       <div className="ledger-header">
         <h2>Ledger Entries</h2>
-        {isLandlord && (
-          <button
-            onClick={() =>
-              // push a fresh UUID — gives each row a unique form ID
-              setPendingRows((prev) => [...prev, crypto.randomUUID()])
-            }
-            className="ledger-btn ledger-btn--add"
-          >
-            {LEDGER_LABELS.addEntry}
-          </button>
-        )}
+        <div className="ledger-header-actions">
+          <LedgerExport
+            entries={entries}
+            fileName={`Ledger_${billId.slice(0, 8)}`}
+          />
+          {isLandlord && (
+            <button
+              onClick={() =>
+                setPendingRows((prev) => [...prev, crypto.randomUUID()])
+              }
+              className="ledger-btn ledger-btn--add"
+            >
+              {LEDGER_LABELS.addEntry}
+            </button>
+          )}
+        </div>
       </div>
 
       <table className="ledger-table">

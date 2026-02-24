@@ -208,7 +208,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   );
 
   return (
-    <div style={{ padding: "2rem" }}>
+    <div className="property-page">
       <h1>📍 {property.address}</h1>
       <PropertyTabs
         propertyId={property.id}

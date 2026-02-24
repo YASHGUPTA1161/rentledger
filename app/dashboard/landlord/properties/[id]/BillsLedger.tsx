@@ -53,12 +53,10 @@ export function BillsLedger({
       <div className="space-y-4">
         {bills.length === 0 ? (
           /* EMPTY STATE - No bills yet */
-          <div className="border rounded-lg p-8 bg-white shadow-sm text-center">
+          <div className="bill-empty-state">
             <div className="mb-6">
-              <p className="text-gray-600 text-lg mb-2">
-                No bills yet for this tenancy
-              </p>
-              <p className="text-gray-500 text-sm">
+              <p className="bill-empty-text">No bills yet for this tenancy</p>
+              <p className="bill-empty-sub">
                 Add your first entry below to automatically create a bill for
                 this month
               </p>
@@ -75,10 +73,7 @@ export function BillsLedger({
         ) : (
           /* EXISTING BILLS */
           bills.map((bill) => (
-            <div
-              key={bill.id}
-              className="border rounded-lg p-6 bg-white shadow-sm"
-            >
+            <div key={bill.id} className="bill-card">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-xl font-semibold">
@@ -87,7 +82,7 @@ export function BillsLedger({
                       year: "numeric",
                     })}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="bill-due">
                     Due: {new Date(bill.dueDate).toLocaleDateString("en-IN")}
                   </p>
                 </div>
@@ -106,48 +101,50 @@ export function BillsLedger({
 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <p className="text-gray-600 text-sm">Rent</p>
-                  <p className="font-semibold">₹{bill.rent.toLocaleString()}</p>
+                  <p className="bill-field-label">Rent</p>
+                  <p className="bill-field-value">
+                    ₹{bill.rent.toLocaleString()}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-gray-600 text-sm">Electricity</p>
-                  <p className="font-semibold">
+                  <p className="bill-field-label">Electricity</p>
+                  <p className="bill-field-value">
                     {bill.electricityUnits ?? 0} units × ₹
                     {bill.electricityRate ?? 0} = ₹
                     {bill.electricityTotal?.toLocaleString() ?? "0"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600 text-sm">Water</p>
-                  <p className="font-semibold">
+                  <p className="bill-field-label">Water</p>
+                  <p className="bill-field-value">
                     ₹{bill.waterBill?.toLocaleString() ?? "0"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600 text-sm">Carry Forward</p>
-                  <p className="font-semibold">
+                  <p className="bill-field-label">Carry Forward</p>
+                  <p className="bill-field-value">
                     {bill.carryForward >= 0 ? "+" : ""}₹
                     {bill.carryForward.toLocaleString()}
                   </p>
                 </div>
               </div>
 
-              <div className="border-t pt-4 grid grid-cols-3 gap-4">
+              <div className="bill-totals-row">
                 <div>
-                  <p className="text-gray-600 text-sm">Total</p>
-                  <p className="font-bold text-lg">
+                  <p className="bill-field-label">Total</p>
+                  <p className="bill-total-value">
                     ₹{bill.totalBill.toLocaleString()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600 text-sm">Paid</p>
-                  <p className="font-bold text-lg text-green-600">
+                  <p className="bill-field-label">Paid</p>
+                  <p className="bill-total-value bill-total-value--paid">
                     ₹{bill.paidAmount.toLocaleString()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600 text-sm">Remaining</p>
-                  <p className="font-bold text-lg text-red-600">
+                  <p className="bill-field-label">Remaining</p>
+                  <p className="bill-total-value bill-total-value--remaining">
                     ₹{bill.remainingAmount.toLocaleString()}
                   </p>
                 </div>
@@ -189,8 +186,8 @@ export function BillsLedger({
                 </div>
               )}
 
-              {/* LEDGER TABLE */}
-              <div>
+              {/* LEDGER TABLE — horizontal scroll for many columns */}
+              <div className="bill-ledger-wrap">
                 <LedgerTable
                   tenancyId={tenancyId}
                   billId={bill.id}
