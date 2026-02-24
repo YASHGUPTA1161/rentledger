@@ -1,7 +1,7 @@
 // import { Uploader } from "@/components/web/Uploader";
 
-import { signupAction } from "./(auth)/signup/actions";
 import Link from "next/link";
+import { GoogleSignInButton } from "./components/GoogleSignInButton";
 
 export default function Home() {
   return (
@@ -17,6 +17,7 @@ export default function Home() {
       <Link href="/login">
         <button>Log In</button>
       </Link>
+      <GoogleSignInButton />
     </div>
   );
 }
