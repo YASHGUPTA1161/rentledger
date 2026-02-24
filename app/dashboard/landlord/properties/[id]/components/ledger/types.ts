@@ -59,6 +59,7 @@ export interface LedgerTableProps {
 }
 
 export interface NewEntryRowProps {
+  rowId: string; // unique per blank row — used to avoid form ID collisions
   tenancyId: string;
   onSubmit: (formData: FormData) => void;
   onCancel: () => void;

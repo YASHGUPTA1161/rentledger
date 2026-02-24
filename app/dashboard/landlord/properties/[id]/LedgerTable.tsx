@@ -59,7 +59,9 @@ export function LedgerTable({
 }: LedgerTableProps) {
   const router = useRouter();
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [isAdding, setIsAdding] = useState(false);
+  // pendingRows: each string is a UUID for one blank "new entry" row.
+  // WHY array not boolean: multiple rows can be open at the same time.
+  const [pendingRows, setPendingRows] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // ─── Edit guard: 24hr window + not verified ───────────────
@@ -71,14 +73,19 @@ export function LedgerTable({
   };
 
   // ─── Handlers ─────────────────────────────────────────────
-  const handleSubmitNew = async (formData: FormData) => {
+  // rowId identifies WHICH blank row submitted — so only that row is removed.
+  const handleSubmitNew = async (formData: FormData, rowId: string) => {
     const result = await addLedgerEntry(formData);
     if (result.success) {
-      setIsAdding(false);
+      setPendingRows((prev) => prev.filter((id) => id !== rowId));
       toast.success(LEDGER_TOASTS.entryAdded, { position: "bottom-right" });
     } else {
       console.error("Failed to add entry:", result.error);
     }
+  };
+
+  const handleCancelRow = (rowId: string) => {
+    setPendingRows((prev) => prev.filter((id) => id !== rowId));
   };
 
   const handleDelete = async (entryId: string) => {
@@ -144,7 +151,10 @@ export function LedgerTable({
         <h2>Ledger Entries</h2>
         {isLandlord && (
           <button
-            onClick={() => setIsAdding(true)}
+            onClick={() =>
+              // push a fresh UUID — gives each row a unique form ID
+              setPendingRows((prev) => [...prev, crypto.randomUUID()])
+            }
             className="ledger-btn ledger-btn--add"
           >
             {LEDGER_LABELS.addEntry}
@@ -173,13 +183,15 @@ export function LedgerTable({
           </tr>
         </thead>
         <tbody>
-          {isAdding && (
+          {pendingRows.map((rowId) => (
             <NewEntryRow
+              key={rowId}
+              rowId={rowId}
               tenancyId={tenancyId}
-              onSubmit={handleSubmitNew}
-              onCancel={() => setIsAdding(false)}
+              onSubmit={(formData) => handleSubmitNew(formData, rowId)}
+              onCancel={() => handleCancelRow(rowId)}
             />
-          )}
+          ))}
 
           {entries.map((entry) => (
             <EntryRow

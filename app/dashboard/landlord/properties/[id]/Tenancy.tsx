@@ -281,9 +281,7 @@ export function Tenancy({ propertyId, activeTenancy }: TenancyProps) {
                 onClick={async () => {
                   const result = await sendInvite(tenant.id, propertyId);
                   if (result.success) {
-                    toast.success(
-                      "Invitation sent to " + (tenant.email || "tenant"),
-                    );
+                    toast.success("Invitation sent to " + result.email);
                   } else {
                     toast.error(result.error || "Failed to send invite");
                   }

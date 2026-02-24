@@ -2,44 +2,66 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
-import {
-  LEDGER_LABELS,
-  PAYMENT_METHODS,
-  UPLOAD_VALIDATION,
-  LEDGER_TOASTS,
-} from "./constants";
+import { PAYMENT_METHODS, UPLOAD_VALIDATION, LEDGER_TOASTS } from "./constants";
 import type { NewEntryRowProps } from "./types";
 
-// ─── NewEntryRow ──────────────────────────────────────────────
-// Renders the blank input row shown when landlord clicks "+ Add Entry".
-// Handles its own S3 upload state independently.
-// WHY separate: ~300 lines of form + upload logic that pollutes LedgerTable.
-// ─────────────────────────────────────────────────────────────
+// ─── NewEntryRow ──────────────────────────────────────────────────────────────
+//
+// WHY THIS SHAPE:
+//   Each blank row is completely self-contained — its own state, its own form.
+//   The parent (LedgerTable) can mount multiple of these at once.
+//   `rowId` is a unique UUID passed by the parent to namespace the HTML form ID
+//   so inputs from row-1 never bleed into row-2.
+//
+// FLOW:
+//   Parent clicks "+ Add Entry"
+//     → LedgerTable pushes a UUID to pendingRows[]
+//       → <NewEntryRow rowId={uuid} .../>  appears in <tbody>
+//         → User fills cells inline
+//           → Clicks ✓  → onSubmit(formData) → parent saves + removes rowId
+//           → Clicks ✗  → onCancel()         → parent removes rowId
+//
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function NewEntryRow({
+  rowId,
   tenancyId,
   onSubmit,
   onCancel,
 }: NewEntryRowProps) {
+  const formId = `new-entry-form-${rowId}`;
+
+  // ── Controlled inputs needed for auto-calculation ──
   const [currentReading, setCurrentReading] = useState<number>(0);
   const [rate, setRate] = useState<number>(0);
   const [water, setWater] = useState<number>(0);
   const [rent, setRent] = useState<number>(0);
+  const [saving, setSaving] = useState(false);
+
+  // S3 proof upload
   const [uploadedProofUrl, setUploadedProofUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
 
+  // ── Auto-calculated values (client-side, no server involved) ──
+  // WHY HERE: these are live previews while the landlord types.
+  // The same numbers go into formData on submit — backend just stores them.
   const units = currentReading > 0 ? currentReading : 0;
   const electricityTotal = units * rate;
-  const total = electricityTotal + water + rent;
+  const debitTotal = electricityTotal + water + rent;
 
+  // ── Submit ──────────────────────────────────────────────────
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSaving(true);
     const formData = new FormData(e.currentTarget);
     formData.append("tenancyId", tenancyId);
     onSubmit(formData);
+    // parent is responsible for removing this row after success
+    setSaving(false);
   };
 
+  // ── Proof upload to S3 ──────────────────────────────────────
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -66,7 +88,7 @@ export function NewEntryRow({
         .replace(/[^a-zA-Z0-9._-]/g, "")
         .substring(0, 200);
 
-      const response = await fetch("/api/s3/upload", {
+      const res = await fetch("/api/s3/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -76,23 +98,23 @@ export function NewEntryRow({
         }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
+      if (!res.ok) {
+        const err = await res.json();
         throw new Error(
-          error.details
-            ? JSON.stringify(error.details)
-            : error.error || "Failed to get upload URL",
+          err.details
+            ? JSON.stringify(err.details)
+            : err.error || "Failed to get upload URL",
         );
       }
 
-      const { presignedUrl, key } = await response.json();
-      const uploadResponse = await fetch(presignedUrl, {
+      const { presignedUrl, key } = await res.json();
+      const uploadRes = await fetch(presignedUrl, {
         method: "PUT",
         body: file,
         headers: { "Content-Type": file.type },
       });
 
-      if (!uploadResponse.ok) throw new Error("Failed to upload file to S3");
+      if (!uploadRes.ok) throw new Error("Failed to upload file to S3");
 
       const publicUrl = `${process.env.NEXT_PUBLIC_S3_URL || "https://t3.storage.dev"}/${process.env.NEXT_PUBLIC_S3_BUCKET || "rentledger"}/${key}`;
       setUploadedProofUrl(publicUrl);
@@ -108,54 +130,57 @@ export function NewEntryRow({
 
   return (
     <tr className="ledger-new-entry-row">
-      {/* Hidden form — action is tied to inputs via form="new-entry-form" */}
+      {/* Checkbox column — also houses the hidden form.
+          WHY: <form> can't be a direct child of <tr>, and giving it its own <td>
+          shifts every subsequent column right by 1. Nesting it here costs nothing. */}
       <td>
-        <form onSubmit={handleSubmit} id="new-entry-form" />
+        <form id={formId} onSubmit={handleSubmit} style={{ display: "none" }} />
       </td>
 
-      {/* Date */}
+      {/* ── Date ── */}
       <td>
         <input
           type="date"
           name="entryDate"
-          form="new-entry-form"
+          form={formId}
           defaultValue={new Date().toISOString().split("T")[0]}
           className="ledger-input"
+          autoFocus
           required
         />
       </td>
 
-      {/* Description */}
+      {/* ── Description ── */}
       <td>
         <input
           type="text"
           name="description"
-          form="new-entry-form"
-          placeholder="Description..."
+          form={formId}
+          placeholder="e.g. February rent"
           className="ledger-input"
           required
         />
       </td>
 
-      {/* Current Meter */}
+      {/* ── Current Meter ── */}
       <td>
         <input
           type="number"
           name="electricityCurrentReading"
-          form="new-entry-form"
-          placeholder="Current meter"
+          form={formId}
+          placeholder="Reading"
           className="ledger-input ledger-input--sm"
           value={currentReading || ""}
           onChange={(e) => setCurrentReading(parseFloat(e.target.value) || 0)}
         />
       </td>
 
-      {/* Rate */}
+      {/* ── Rate ── */}
       <td>
         <input
           type="number"
           name="electricityRate"
-          form="new-entry-form"
+          form={formId}
           placeholder="₹/unit"
           step="0.01"
           className="ledger-input ledger-input--xs"
@@ -164,21 +189,21 @@ export function NewEntryRow({
         />
       </td>
 
-      {/* Units (auto-calculated, read-only) */}
-      <td className="ledger-cell--muted">{units ? `${units} units` : "-"}</td>
+      {/* ── Units — auto-calculated, read-only ── */}
+      <td className="ledger-cell--muted">{units > 0 ? `${units}` : "-"}</td>
 
-      {/* Electricity Total (auto-calculated, read-only) */}
+      {/* ── Electricity Total — auto-calculated ── */}
       <td className="ledger-cell--muted">
-        {electricityTotal ? `₹${electricityTotal.toFixed(2)}` : "-"}
+        {electricityTotal > 0 ? `₹${electricityTotal.toFixed(2)}` : "-"}
       </td>
 
-      {/* Water */}
+      {/* ── Water ── */}
       <td>
         <input
           type="number"
           name="waterBill"
-          form="new-entry-form"
-          placeholder="Water"
+          form={formId}
+          placeholder="₹"
           step="0.01"
           className="ledger-input ledger-input--sm"
           value={water || ""}
@@ -186,13 +211,13 @@ export function NewEntryRow({
         />
       </td>
 
-      {/* Rent */}
+      {/* ── Rent ── */}
       <td>
         <input
           type="number"
           name="rentAmount"
-          form="new-entry-form"
-          placeholder="Rent"
+          form={formId}
+          placeholder="₹"
           step="0.01"
           className="ledger-input ledger-input--sm"
           value={rent || ""}
@@ -200,32 +225,32 @@ export function NewEntryRow({
         />
       </td>
 
-      {/* Total Debit (auto-calculated) */}
+      {/* ── Debit Total — auto-calculated ── */}
       <td
         className={
-          total > 0 ? "ledger-cell--total-active" : "ledger-cell--muted"
+          debitTotal > 0 ? "ledger-cell--total-active" : "ledger-cell--muted"
         }
       >
-        {total > 0 ? `₹${total.toFixed(2)}` : "-"}
+        {debitTotal > 0 ? `₹${debitTotal.toFixed(2)}` : "-"}
       </td>
 
-      {/* Credit / Payment */}
+      {/* ── Credit / Payment received ── */}
       <td>
         <input
           type="number"
           name="creditAmount"
-          form="new-entry-form"
-          placeholder="Payment"
+          form={formId}
+          placeholder="₹"
           step="0.01"
           className="ledger-input ledger-input--sm"
         />
       </td>
 
-      {/* Payment Method */}
+      {/* ── Payment Method ── */}
       <td>
         <select
           name="paymentMethod"
-          form="new-entry-form"
+          form={formId}
           className="ledger-input ledger-input--sm"
         >
           {PAYMENT_METHODS.map(({ value, label }) => (
@@ -236,7 +261,7 @@ export function NewEntryRow({
         </select>
       </td>
 
-      {/* Proof Upload */}
+      {/* ── Proof Upload ── */}
       <td>
         <div className="ledger-upload-cell">
           <input
@@ -247,14 +272,10 @@ export function NewEntryRow({
             className="ledger-file-input"
           />
           {isUploading && (
-            <span className="ledger-upload-status">
-              {LEDGER_LABELS.uploading}
-            </span>
+            <span className="ledger-upload-status">Uploading…</span>
           )}
           {uploadedProofUrl && (
-            <span className="ledger-upload-success">
-              {LEDGER_LABELS.uploaded}
-            </span>
+            <span className="ledger-upload-success">✅</span>
           )}
           {uploadError && (
             <span className="ledger-upload-error">{uploadError}</span>
@@ -262,31 +283,36 @@ export function NewEntryRow({
           <input
             type="hidden"
             name="paymentProof"
-            form="new-entry-form"
+            form={formId}
             value={uploadedProofUrl}
           />
         </div>
       </td>
 
-      {/* Verify — n/a for new row */}
-      <td>-</td>
+      {/* ── Verify — n/a for new rows ── */}
+      <td className="ledger-cell--muted">-</td>
 
-      {/* Actions */}
+      {/* ── Actions: ✓ save, ✗ discard ── */}
       <td>
-        <button
-          type="submit"
-          form="new-entry-form"
-          className="ledger-btn ledger-btn--save"
-        >
-          {LEDGER_LABELS.save}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="ledger-btn ledger-btn--cancel"
-        >
-          {LEDGER_LABELS.cancel}
-        </button>
+        <div style={{ display: "flex", gap: "4px" }}>
+          <button
+            type="submit"
+            form={formId}
+            className="ledger-btn ledger-btn--save"
+            disabled={saving || isUploading}
+            title="Save entry"
+          >
+            {saving ? "…" : "✓"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="ledger-btn ledger-btn--cancel"
+            title="Discard"
+          >
+            ✗
+          </button>
+        </div>
       </td>
     </tr>
   );

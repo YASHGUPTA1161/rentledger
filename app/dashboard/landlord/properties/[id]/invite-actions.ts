@@ -46,7 +46,11 @@ export async function sendInvite(tenantId: string, propertyId: string) {
     const inviteLink = `${baseUrl}/invite/${inviteToken.token}`;
 
     await resend.emails.send({
-      from: "RentLedger <onboarding@resend.dev>",
+      // WHY this env var:
+      //   onboarding@resend.dev only delivers to Resend account owner's email.
+      //   Once you verify a domain (e.g. rentledger.online), you MUST send FROM
+      //   an address at that domain. Set RESEND_FROM_EMAIL in Vercel env vars.
+      from: `RentLedger <${process.env.RESEND_FROM_EMAIL ?? "noreply@contact.rentledger.online"}>`,
       to: tenantEmail,
       subject: "You've been invited to RentLedger",
       html: `
@@ -70,7 +74,8 @@ export async function sendInvite(tenantId: string, propertyId: string) {
       `,
     });
 
-    return { success: true, message: "Invitation sent!" };
+    // Return actual email used — button toast shows this, not the contact field
+    return { success: true, message: "Invitation sent!", email: tenantEmail };
   } catch (error) {
     console.error("Send invite error:", error);
     return { success: false, error: "Failed to send invite" };
