@@ -43,6 +43,11 @@ export function DashboardNav({ userName, role, unreadCount, tenants }: Props) {
             )}
           </button>
 
+          {/* Docs */}
+          <Link href="/dashboard/docs" className="nav-contact-link">
+            Docs
+          </Link>
+
           {/* Contact — same-app navigation */}
           <Link href="/contact" className="nav-contact-link">
             Contact
