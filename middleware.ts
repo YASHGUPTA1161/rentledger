@@ -1,7 +1,62 @@
 import * as jose from "jose";
 import { NextResponse, NextRequest } from "next/server";
+import {
+  loginLimiter,
+  signupLimiter,
+  contactLimiter,
+  waitlistLimiter,
+} from "@/lib/rateLimit";
+
+// ── Helper: get real client IP ────────────────────────────────────────────────
+// x-forwarded-for is set by Vercel/proxies. Fallback to "anonymous" if missing.
+function getIP(req: NextRequest): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous"
+  );
+}
 
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const ip = getIP(request);
+
+  // ── Block 1: Rate limit public API routes ─────────────────────────────────
+  //
+  //  Flow:
+  //    Bot sends 100 req/s to /api/auth/login
+  //        → middleware checks Redis counter for this IP
+  //        → counter exceeds limit → return 429 immediately
+  //        → route handler NEVER runs, DB never touched
+  //
+  type LimitResult = { success: boolean; remaining: number; reset: number };
+  let limitResult: LimitResult | null = null;
+
+  if (path === "/api/auth/login") limitResult = await loginLimiter.limit(ip);
+  if (path === "/api/auth/signup") limitResult = await signupLimiter.limit(ip);
+  if (path === "/api/contact") limitResult = await contactLimiter.limit(ip);
+  if (path === "/api/waitlist") limitResult = await waitlistLimiter.limit(ip);
+
+  if (limitResult && !limitResult.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          // Standard rate-limit headers — lets clients back off gracefully
+          "Retry-After": String(
+            Math.ceil((limitResult.reset - Date.now()) / 1000),
+          ),
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
+  }
+
+  // ── Block 2: Auth guard for dashboard routes ──────────────────────────────
+  //  (existing logic — unchanged)
+  if (!path.startsWith("/dashboard")) {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get("session")?.value;
 
   if (!token) {
@@ -12,41 +67,30 @@ export async function middleware(request: NextRequest) {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const { payload } = await jose.jwtVerify(token, secret);
 
-    // Extract user context from JWT
     const role = payload.role as string;
     const landlordId = payload.landlordId as string | null;
     const userId = payload.userId as string;
 
-    // If user hits generic /dashboard, redirect to role-specific dashboard
-    if (request.nextUrl.pathname === "/dashboard") {
-      if (role === "landlord") {
+    // Redirect /dashboard → role-specific page
+    if (path === "/dashboard") {
+      if (role === "landlord")
         return NextResponse.redirect(
           new URL("/dashboard/landlord", request.url),
         );
-      } else if (role === "tenant") {
+      if (role === "tenant")
         return NextResponse.redirect(new URL("/dashboard/tenant", request.url));
-      } else if (role === "admin") {
+      if (role === "admin")
         return NextResponse.redirect(new URL("/dashboard/admin", request.url));
-      }
     }
 
-    // For all other protected routes, let them through with context in headers
-    // ── ROLE-BASED ROUTE PROTECTION ──
-    // A tenant typing /dashboard/landlord in the URL bar gets blocked
-    // A landlord typing /dashboard/tenant also gets blocked
-    const path = request.nextUrl.pathname;
-
-    if (path.startsWith("/dashboard/landlord") && role !== "landlord") {
-      // Non-landlord trying to access landlord routes → kick them to their dashboard
+    // Role-based route protection
+    if (path.startsWith("/dashboard/landlord") && role !== "landlord")
       return NextResponse.redirect(new URL("/dashboard/tenant", request.url));
-    }
 
-    if (path.startsWith("/dashboard/tenant") && role !== "tenant") {
-      // Non-tenant trying to access tenant routes → kick them to their dashboard
+    if (path.startsWith("/dashboard/tenant") && role !== "tenant")
       return NextResponse.redirect(new URL("/dashboard/landlord", request.url));
-    }
 
-    // ── Pass user context in headers (for server components to read) ──
+    // Forward user context in headers
     const response = NextResponse.next();
     response.headers.set("X-user-id", userId);
     response.headers.set("X-user-email", payload.email as string);
@@ -62,9 +106,15 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard", // Exact match
-    "/dashboard/:path*", // Subpaths
+    // Dashboard auth guard
+    "/dashboard",
+    "/dashboard/:path*",
     "/profile/:path*",
     "/settings/:path*",
+    // Rate-limited public API routes
+    "/api/auth/login",
+    "/api/auth/signup",
+    "/api/contact",
+    "/api/waitlist",
   ],
 };

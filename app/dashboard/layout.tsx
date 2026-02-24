@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import db from "@/lib/prisma";
 import { DashboardNav } from "./components/DashboardNav";
+import { withCache, CacheKeys, TTL } from "@/lib/cache";
 
 export default async function DashboardLayout({
   children,
@@ -16,23 +17,30 @@ export default async function DashboardLayout({
   const userId = payload.userId as string;
   const role = payload.role as string;
 
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { name: true, email: true },
-  });
+  // ── Cached queries (falls back to DB if Redis is down) ───────────────────
+  const user = await withCache(CacheKeys.user(userId), TTL.user, () =>
+    db.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    }),
+  );
 
-  const unreadCount = await db.notification.count({
-    where: { userId, read: false },
-  });
+  const unreadCount = await withCache(
+    CacheKeys.unread(userId),
+    TTL.unread,
+    () => db.notification.count({ where: { userId, read: false } }),
+  );
 
   // Only fetch tenants for landlord — used in notification popup
   let tenants: { id: string; fullName: string }[] = [];
   if (role === "landlord") {
     const landlordId = payload.landlordId as string;
-    tenants = await db.tenant.findMany({
-      where: { landlordId },
-      select: { id: true, fullName: true },
-    });
+    tenants = await withCache(CacheKeys.tenants(landlordId), TTL.tenants, () =>
+      db.tenant.findMany({
+        where: { landlordId },
+        select: { id: true, fullName: true },
+      }),
+    );
   }
 
   return (

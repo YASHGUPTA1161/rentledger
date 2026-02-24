@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import db from "@/lib/prisma";
 import resend from "@/lib/resend";
+import { cacheDelete, CacheKeys } from "@/lib/cache";
 
 export async function sendInvite(tenantId: string, propertyId: string) {
   try {
@@ -73,6 +74,9 @@ export async function sendInvite(tenantId: string, propertyId: string) {
         </div>
       `,
     });
+
+    // Invalidate tenant list cache — next dashboard load re-fetches from DB
+    await cacheDelete(CacheKeys.tenants(landlordId));
 
     // Return actual email used — button toast shows this, not the contact field
     return { success: true, message: "Invitation sent!", email: tenantEmail };

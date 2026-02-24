@@ -4,6 +4,7 @@ import resend from "@/lib/resend";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import { revalidatePath } from "next/cache";
+import { cacheDelete, CacheKeys } from "@/lib/cache";
 
 export async function sendSelectedNotifications(formData: FormData) {
   const token = (await cookies()).get("session")?.value;
@@ -168,6 +169,10 @@ export async function sendSelectedNotifications(formData: FormData) {
     }
   }
 
+  // Invalidate unread count cache for all notified tenants
+  // (their bell badge will refresh on next page load)
+  await cacheDelete(...tenants.map((t) => CacheKeys.unread(t.userId)));
+
   revalidatePath("/dashboard");
   return { success: true, sent: tenants.length };
 }
@@ -183,6 +188,9 @@ export async function markAllRead() {
     where: { userId, read: false },
     data: { read: true },
   });
+
+  // Invalidate this user's unread cache so badge resets immediately
+  await cacheDelete(CacheKeys.unread(userId));
 
   revalidatePath("/dashboard");
 }
