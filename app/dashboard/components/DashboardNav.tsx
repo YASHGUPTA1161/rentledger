@@ -47,6 +47,11 @@ export function DashboardNav({ userName, role, unreadCount, tenants }: Props) {
           <Link href="/contact" className="nav-contact-link">
             Contact
           </Link>
+
+          {/* Pricing / Waitlist */}
+          <Link href="/pricing" className="nav-contact-link">
+            Pricing
+          </Link>
           <div className="nav-avatar-wrap">
             <button className="nav-avatar-btn" onClick={() => setOpen(!open)}>
               {userName.charAt(0).toUpperCase()}

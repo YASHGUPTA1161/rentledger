@@ -494,3 +494,13 @@ model InviteToken {
   @@index([token])
   @@index([email])
 }
+
+model WaitlistEntry {
+  id          String    @id @default(uuid())
+  email       String    @unique     // prevents duplicate signups
+  firstName   String
+  joinedAt    DateTime  @default(now())
+  emailSent   Boolean   @default(false)  // tracks if welcome email was sent
+  emailSentAt DateTime?                  // when it was sent
+}
+
