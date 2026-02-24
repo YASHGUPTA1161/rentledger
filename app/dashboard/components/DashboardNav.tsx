@@ -42,6 +42,11 @@ export function DashboardNav({ userName, role, unreadCount, tenants }: Props) {
               <span className="nav-badge">{unreadCount}</span>
             )}
           </button>
+
+          {/* Contact — same-app navigation */}
+          <Link href="/contact" className="nav-contact-link">
+            Contact
+          </Link>
           <div className="nav-avatar-wrap">
             <button className="nav-avatar-btn" onClick={() => setOpen(!open)}>
               {userName.charAt(0).toUpperCase()}

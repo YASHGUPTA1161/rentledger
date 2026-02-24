@@ -43,7 +43,9 @@ export function NotificationPopup({ tenants, onClose }: Props) {
   const [enabled, setEnabled] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
   const [templateId, setTemplateId] = useState<TemplateId>("reminder");
-  const [customMessage, setCustomMessage] = useState(TEMPLATES[0].message);
+  const [customMessage, setCustomMessage] = useState<string>(
+    TEMPLATES[0].message,
+  );
   const [sendEmail, setSendEmail] = useState(false);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<string | null>(null);

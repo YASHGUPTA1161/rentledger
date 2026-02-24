@@ -967,3 +967,172 @@ img {
   border-left: 2px solid #2a2a2a;
   padding-left: 0.5rem;
 }
+
+/* Nav contact link */
+.nav-contact-link {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #2a2a2a;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.nav-contact-link:hover {
+  color: #fff;
+  border-color: #4b5563;
+  text-decoration: none;
+}
+
+/* === Contact Page === */
+.contact-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1rem;
+  background: #09090b;
+}
+.contact-card {
+  width: 100%;
+  max-width: 560px;
+  background: #111;
+  border: 1px solid #1f1f1f;
+  border-radius: 16px;
+  overflow: hidden;
+}
+/* Header section */
+.contact-header {
+  padding: 2rem 2rem 1.5rem;
+  border-bottom: 1px solid #1f1f1f;
+}
+.contact-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.6rem;
+}
+.contact-sub {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0 0 0.6rem;
+}
+.contact-email-note {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+}
+.contact-email-link {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+/* Form */
+.contact-form {
+  padding: 1.5rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.contact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.contact-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+/* Category buttons */
+.contact-category-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.contact-cat-btn {
+  padding: 0.35rem 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 9999px;
+  color: #9ca3af;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.contact-cat-btn:hover {
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+.contact-cat-btn--active {
+  background: #1e3a5f;
+  border-color: #2563eb;
+  color: #fff;
+  font-weight: 600;
+}
+/* Inputs */
+.contact-input {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  color: #e5e7eb;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.contact-input:focus {
+  border-color: #2563eb;
+  outline: none;
+}
+.contact-textarea {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  color: #e5e7eb;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  width: 100%;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+.contact-textarea:focus {
+  border-color: #2563eb;
+  outline: none;
+}
+/* Feedback */
+.contact-success {
+  font-size: 0.875rem;
+  color: #86efac;
+  margin: 0;
+}
+.contact-error {
+  font-size: 0.875rem;
+  color: #fca5a5;
+  margin: 0;
+}
+/* Submit */
+.contact-submit {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 0.7rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.contact-submit:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+.contact-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
