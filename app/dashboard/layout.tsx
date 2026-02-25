@@ -16,6 +16,7 @@ export default async function DashboardLayout({
 
   const userId = payload.userId as string;
   const role = payload.role as string;
+  const userImage = (payload.image as string | null) ?? null;
 
   // ── Cached queries (falls back to DB if Redis is down) ───────────────────
   const user = await withCache(CacheKeys.user(userId), TTL.user, () =>
@@ -53,6 +54,8 @@ export default async function DashboardLayout({
     <div className="dashboard-shell">
       <DashboardNav
         userName={user?.name ?? user?.email ?? "User"}
+        userEmail={user?.email ?? undefined}
+        userImage={userImage ?? undefined}
         role={role}
         unreadCount={unreadCount}
         tenants={tenants}

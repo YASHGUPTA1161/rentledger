@@ -47,6 +47,7 @@ export async function GET() {
     role: userRole.role,
     landlordId: userRole.landlordId,
     tenantId,
+    image: session.user.image ?? null, // Google profile photo URL (null for email/password users)
   };
 
   // 6. Sign the JWT — same secret + algo as actions.tsx

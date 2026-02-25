@@ -9,6 +9,8 @@ import toast from "react-hot-toast";
 
 interface Props {
   userName: string;
+  userEmail?: string;
+  userImage?: string;
   role: string;
   unreadCount: number;
   tenants: { id: string; fullName: string }[];
@@ -17,6 +19,8 @@ interface Props {
 
 export function DashboardNav({
   userName,
+  userEmail,
+  userImage,
   role,
   unreadCount,
   tenants,
@@ -99,12 +103,22 @@ export function DashboardNav({
           {/* Avatar + dropdown */}
           <div className="nav-avatar-wrap">
             <button className="nav-avatar-btn" onClick={() => setOpen(!open)}>
-              {userName.charAt(0).toUpperCase()}
+              {userImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={userImage}
+                  alt={userName}
+                  className="nav-avatar-pfp"
+                />
+              ) : (
+                userName.charAt(0).toUpperCase()
+              )}
             </button>
 
             {open && (
               <div className="nav-dropdown">
                 <p className="nav-user-name">{userName}</p>
+                {userEmail && <p className="nav-user-email">{userEmail}</p>}
                 <p className="nav-user-role">{role}</p>
 
                 {/* ── Currency flag button ── */}
