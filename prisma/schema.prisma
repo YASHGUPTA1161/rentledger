@@ -378,3 +378,14 @@ enum ReminderStatus {
   sent
   failed
 }
+
+model WaitlistEntry {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  firstName   String
+  emailSent   Boolean   @default(false)
+  emailSentAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([email])
+}
