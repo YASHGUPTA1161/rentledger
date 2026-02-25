@@ -56,14 +56,25 @@ export function LedgerTable({
   billId,
   entries,
   isLandlord,
+  currency = "INR",
   onVerify,
 }: LedgerTableProps) {
   const router = useRouter();
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  // pendingRows: each string is a UUID for one blank "new entry" row.
-  // WHY array not boolean: multiple rows can be open at the same time.
   const [pendingRows, setPendingRows] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // ── Last saved meter reading ──
+  // Sorted by date desc so [0] is the most recent entry.
+  // WHY: new entries must subtract the previous reading to get units consumed.
+  const lastMeterReading =
+    [...entries]
+      .sort(
+        (a, b) =>
+          new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime(),
+      )
+      .find((e) => e.electricityCurrentReading != null)
+      ?.electricityCurrentReading ?? 0;
 
   // ─── Edit guard: 24hr window + not verified ───────────────
   const canEditEntry = (entry: SerializedLedgerEntry): boolean => {
@@ -194,6 +205,8 @@ export function LedgerTable({
               key={rowId}
               rowId={rowId}
               tenancyId={tenancyId}
+              currency={currency}
+              previousReading={lastMeterReading}
               onSubmit={(formData) => handleSubmitNew(formData, rowId)}
               onCancel={() => handleCancelRow(rowId)}
             />
@@ -205,6 +218,7 @@ export function LedgerTable({
               entry={entry}
               isLandlord={isLandlord}
               isSelected={selectedRows.has(entry.id)}
+              currency={currency}
               onToggleSelect={() => toggleRowSelection(entry.id)}
               onDelete={() => handleDelete(entry.id)}
               isEditing={editingId === entry.id}
@@ -216,7 +230,11 @@ export function LedgerTable({
             />
           ))}
 
-          <LedgerTotals entries={entries} isLandlord={isLandlord} />
+          <LedgerTotals
+            entries={entries}
+            isLandlord={isLandlord}
+            currency={currency}
+          />
         </tbody>
       </table>
     </div>

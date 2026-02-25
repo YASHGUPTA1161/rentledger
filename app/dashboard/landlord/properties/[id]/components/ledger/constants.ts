@@ -12,11 +12,11 @@ export const LEDGER_COLUMNS = {
   currMeter: "Curr Meter",
   rate: "Rate",
   units: "Units",
-  electricity: "Elec ₹",
-  water: "Water ₹",
-  rent: "Rent ₹",
-  debit: "Debit (₹)",
-  credit: "Credit (₹)",
+  electricity: "Elec",
+  water: "Water",
+  rent: "Rent",
+  debit: "Debit",
+  credit: "Credit",
   method: "Method",
   proof: "Proof",
   verify: "Verify",
@@ -40,7 +40,7 @@ export const LEDGER_LABELS = {
   uploading: "Uploading...",
   uploaded: "✅ Uploaded",
   totals: "TOTALS:",
-  remaining: "Remaining: ₹",
+  remaining: "Remaining:",
 } as const;
 
 // ─── Payment Method Options ──────────────────────────────────

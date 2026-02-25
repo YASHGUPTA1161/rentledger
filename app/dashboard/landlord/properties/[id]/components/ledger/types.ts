@@ -55,12 +55,15 @@ export interface LedgerTableProps {
   billId: string;
   entries: SerializedLedgerEntry[];
   isLandlord: boolean;
+  currency?: string;
   onVerify?: (entryId: string) => void;
 }
 
 export interface NewEntryRowProps {
-  rowId: string; // unique per blank row — used to avoid form ID collisions
+  rowId: string;
   tenancyId: string;
+  currency?: string;
+  previousReading?: number;
   onSubmit: (formData: FormData) => void;
   onCancel: () => void;
 }
@@ -69,6 +72,7 @@ export interface EntryRowProps {
   entry: SerializedLedgerEntry;
   isLandlord: boolean;
   isSelected: boolean;
+  currency?: string;
   onToggleSelect: () => void;
   onDelete: () => void;
   isEditing: boolean;
@@ -82,4 +86,5 @@ export interface EntryRowProps {
 export interface LedgerTotalsProps {
   entries: SerializedLedgerEntry[];
   isLandlord: boolean;
+  currency?: string;
 }

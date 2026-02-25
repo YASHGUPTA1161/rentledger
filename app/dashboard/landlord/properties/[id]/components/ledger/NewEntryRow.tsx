@@ -3,6 +3,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { PAYMENT_METHODS, UPLOAD_VALIDATION, LEDGER_TOASTS } from "./constants";
+import { getCurrencySymbol } from "@/lib/formatCurrency";
 import type { NewEntryRowProps } from "./types";
 
 // ─── NewEntryRow ──────────────────────────────────────────────────────────────
@@ -26,9 +27,12 @@ import type { NewEntryRowProps } from "./types";
 export function NewEntryRow({
   rowId,
   tenancyId,
+  currency = "INR",
+  previousReading = 0,
   onSubmit,
   onCancel,
 }: NewEntryRowProps) {
+  const sym = getCurrencySymbol(currency);
   const formId = `new-entry-form-${rowId}`;
 
   // ── Controlled inputs needed for auto-calculation ──
@@ -43,10 +47,12 @@ export function NewEntryRow({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
 
-  // ── Auto-calculated values (client-side, no server involved) ──
-  // WHY HERE: these are live previews while the landlord types.
-  // The same numbers go into formData on submit — backend just stores them.
-  const units = currentReading > 0 ? currentReading : 0;
+  // ── Auto-calculated values ──
+  // units = currentReading - previousReading (meter is cumulative)
+  // WHY HERE: live preview while the landlord types.
+  // Same numbers go into formData on submit — backend stores them.
+  const units =
+    currentReading > previousReading ? currentReading - previousReading : 0;
   const electricityTotal = units * rate;
   const debitTotal = electricityTotal + water + rent;
 
@@ -168,7 +174,9 @@ export function NewEntryRow({
           type="number"
           name="electricityCurrentReading"
           form={formId}
-          placeholder="Reading"
+          placeholder={
+            previousReading > 0 ? `prev: ${previousReading}` : "Reading"
+          }
           className="ledger-input ledger-input--sm"
           value={currentReading || ""}
           onChange={(e) => setCurrentReading(parseFloat(e.target.value) || 0)}
@@ -181,7 +189,7 @@ export function NewEntryRow({
           type="number"
           name="electricityRate"
           form={formId}
-          placeholder="₹/unit"
+          placeholder={`${sym}/unit`}
           step="0.01"
           className="ledger-input ledger-input--xs"
           value={rate || ""}
@@ -194,7 +202,7 @@ export function NewEntryRow({
 
       {/* ── Electricity Total — auto-calculated ── */}
       <td className="ledger-cell--muted">
-        {electricityTotal > 0 ? `₹${electricityTotal.toFixed(2)}` : "-"}
+        {electricityTotal > 0 ? `${sym}${electricityTotal.toFixed(2)}` : "-"}
       </td>
 
       {/* ── Water ── */}
@@ -203,7 +211,7 @@ export function NewEntryRow({
           type="number"
           name="waterBill"
           form={formId}
-          placeholder="₹"
+          placeholder={sym}
           step="0.01"
           className="ledger-input ledger-input--sm"
           value={water || ""}
@@ -217,7 +225,7 @@ export function NewEntryRow({
           type="number"
           name="rentAmount"
           form={formId}
-          placeholder="₹"
+          placeholder={sym}
           step="0.01"
           className="ledger-input ledger-input--sm"
           value={rent || ""}
@@ -231,7 +239,7 @@ export function NewEntryRow({
           debitTotal > 0 ? "ledger-cell--total-active" : "ledger-cell--muted"
         }
       >
-        {debitTotal > 0 ? `₹${debitTotal.toFixed(2)}` : "-"}
+        {debitTotal > 0 ? `${sym}${debitTotal.toFixed(2)}` : "-"}
       </td>
 
       {/* ── Credit / Payment received ── */}
@@ -240,7 +248,7 @@ export function NewEntryRow({
           type="number"
           name="creditAmount"
           form={formId}
-          placeholder="₹"
+          placeholder={sym}
           step="0.01"
           className="ledger-input ledger-input--sm"
         />

@@ -7,9 +7,325 @@ datasource db {
   provider = "postgresql"
 }
 
-/////////////////////
-// Enums
-/////////////////////
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String?
+  createdAt     DateTime       @default(now())
+  name          String?
+  landlord      Landlord?
+  notifications Notification[]
+  tenant        Tenant?
+  userRoles     UserRole[]
+}
+
+model UserRole {
+  id         String    @id @default(uuid())
+  userId     String
+  role       Role
+  landlordId String?
+  createdAt  DateTime  @default(now())
+  landlord   Landlord? @relation(fields: [landlordId], references: [id])
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([landlordId])
+}
+
+model Landlord {
+  id                  String               @id @default(uuid())
+  userId              String               @unique
+  name                String
+  contactPhone        String?
+  defaultCurrency     String               @default("INR")
+  createdAt           DateTime             @default(now())
+  bills               Bill[]
+  documents           Document[]
+  inviteTokens        InviteToken[]
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  maintenanceRequests MaintenanceRequest[]
+  paymentReminders    PaymentReminder[]
+  properties          Property[]
+  tenancies           Tenancy[]
+  tenants             Tenant[]
+  userRoles           UserRole[]
+
+  @@index([userId])
+}
+
+model Tenant {
+  id                       String               @id @default(uuid())
+  userId                   String               @unique
+  fullName                 String
+  address                  String?
+  createdAt                DateTime             @default(now())
+  policeVerificationNumber String?
+  policeVerificationDate   DateTime?
+  landlordId               String
+  dateOfBirth              DateTime?
+  email                    String?
+  emergencyContact         String?
+  emergencyContactPhone    String?
+  idNumber                 String?
+  idType                   String?
+  moveInDate               DateTime?
+  occupation               String?
+  phone                    String?
+  workplace                String?
+  bills                    Bill[]
+  documents                Document[]
+  inviteTokens             InviteToken[]
+  maintenanceRequests      MaintenanceRequest[]
+  paymentReminders         PaymentReminder[]
+  tenancies                Tenancy[]
+  landlord                 Landlord             @relation(fields: [landlordId], references: [id])
+  user                     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([landlordId])
+}
+
+model Property {
+  id                  String               @id @default(uuid())
+  landlordId          String
+  address             String
+  description         String?
+  createdAt           DateTime             @default(now())
+  status              String               @default("VACANT")
+  activityLogs        ActivityLog[]
+  bills               Bill[]
+  documents           Document[]
+  inviteTokens        InviteToken[]
+  maintenanceRequests MaintenanceRequest[]
+  landlord            Landlord             @relation(fields: [landlordId], references: [id])
+  tenancies           Tenancy[]
+}
+
+model Tenancy {
+  id              String      @id @default(uuid())
+  tenantId        String
+  propertyId      String
+  leaseStart      DateTime
+  leaseEnd        DateTime?
+  status          LeaseStatus
+  securityDeposit Decimal     @db.Decimal(10, 2)
+  createdAt       DateTime    @default(now())
+  endedAt         DateTime?
+  currency        String      @default("USD")
+  landlordId      String
+  monthlyRent     Decimal     @db.Decimal(10, 2)
+  bills           Bill[]
+  documents       Document[]
+  landlord        Landlord    @relation(fields: [landlordId], references: [id])
+  property        Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant          Tenant      @relation(fields: [tenantId], references: [id])
+
+  @@index([landlordId])
+  @@index([tenantId])
+  @@index([propertyId])
+}
+
+model Bill {
+  id               String            @id @default(uuid())
+  tenantId         String
+  propertyId       String
+  dueDate          DateTime
+  status           PaymentStatus
+  createdAt        DateTime          @default(now())
+  currency         String            @default("INR")
+  landlordId       String
+  tenancyId        String
+  carryForward     Decimal           @default(0) @db.Decimal(10, 2)
+  electricityRate  Decimal?          @db.Decimal(10, 2)
+  electricityTotal Decimal?          @db.Decimal(10, 2)
+  electricityUnits Int?
+  month            DateTime
+  note             String?
+  paidAmount       Decimal           @default(0) @db.Decimal(10, 2)
+  remainingAmount  Decimal           @db.Decimal(10, 2)
+  rent             Decimal           @db.Decimal(10, 2)
+  totalBill        Decimal           @db.Decimal(10, 2)
+  updatedAt        DateTime          @updatedAt
+  waterBill        Decimal?          @db.Decimal(10, 2)
+  editedAt         DateTime?
+  isEdited         Boolean           @default(false)
+  landlord         Landlord          @relation(fields: [landlordId], references: [id])
+  property         Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenancy          Tenancy           @relation(fields: [tenancyId], references: [id], onDelete: Cascade)
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  documents        Document[]
+  ledgerEntries    LedgerEntry[]
+  payments         Payment[]
+  paymentReminders PaymentReminder[]
+
+  @@unique([tenancyId, month])
+  @@index([landlordId])
+  @@index([tenancyId])
+  @@index([tenantId])
+  @@index([propertyId])
+  @@index([month])
+}
+
+model Payment {
+  id                String    @id @default(uuid())
+  billId            String
+  amount            Decimal   @db.Decimal(10, 2)
+  paidAt            DateTime
+  confirmedAt       DateTime?
+  paymentProof      String?
+  paymentMethod     String?
+  note              String?
+  createdAt         DateTime  @default(now())
+  correctionReason  String?
+  isCorrection      Boolean   @default(false)
+  originalPaymentId String?
+  verifiedAt        DateTime?
+  verifiedByTenant  Boolean   @default(false)
+  bill              Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@index([billId])
+  @@index([paidAt])
+}
+
+model LedgerEntry {
+  id                         String    @id @default(uuid())
+  billId                     String
+  entryDate                  DateTime
+  description                String
+  debitAmount                Decimal?  @db.Decimal(10, 2)
+  creditAmount               Decimal?  @db.Decimal(10, 2)
+  verifiedByTenant           Boolean   @default(false)
+  verifiedAt                 DateTime?
+  createdBy                  String
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+  paymentMethod              String?
+  paymentProof               String?
+  editedAt                   DateTime?
+  electricityRate            Decimal?  @db.Decimal(10, 2)
+  electricityTotal           Decimal?  @db.Decimal(10, 2)
+  isEdited                   Boolean   @default(false)
+  rentAmount                 Decimal?  @db.Decimal(10, 2)
+  waterBill                  Decimal?  @db.Decimal(10, 2)
+  electricityCurrentReading  Int?
+  electricityPreviousReading Int?
+  electricityUnitsConsumed   Int?
+  bill                       Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@index([billId])
+  @@index([entryDate])
+}
+
+model Document {
+  id           String    @id @default(uuid())
+  tenantId     String?
+  billId       String?
+  fileUrl      String
+  landlordId   String
+  tenancyId    String?
+  category     String?
+  description  String?
+  documentDate DateTime?
+  documentName String
+  fileSize     Int?
+  mimeType     String?
+  propertyId   String
+  uploadedAt   DateTime  @default(now())
+  bill         Bill?     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  landlord     Landlord  @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  property     Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenancy      Tenancy?  @relation(fields: [tenancyId], references: [id], onDelete: Cascade)
+  tenant       Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([landlordId])
+  @@index([propertyId])
+}
+
+model PaymentReminder {
+  id             String         @id @default(uuid())
+  landlordId     String
+  billId         String
+  tenantId       String
+  status         ReminderStatus
+  reminderSentAt DateTime?
+  createdAt      DateTime       @default(now())
+  bill           Bill           @relation(fields: [billId], references: [id])
+  landlord       Landlord       @relation(fields: [landlordId], references: [id])
+  tenant         Tenant         @relation(fields: [tenantId], references: [id])
+
+  @@index([landlordId])
+  @@index([billId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  message   String
+  read      Boolean          @default(false)
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model MaintenanceRequest {
+  id              String            @id @default(uuid())
+  landlordId      String
+  tenantId        String?
+  propertyId      String
+  description     String
+  status          MaintenanceStatus @default(requested)
+  requestedAt     DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  createdAt       DateTime          @default(now())
+  category        String?
+  completedAt     DateTime?
+  priority        String            @default("MEDIUM")
+  resolutionNotes String?
+  title           String
+  landlord        Landlord          @relation(fields: [landlordId], references: [id])
+  property        Property          @relation(fields: [propertyId], references: [id])
+  tenant          Tenant?           @relation(fields: [tenantId], references: [id])
+
+  @@index([landlordId])
+  @@index([propertyId])
+  @@index([status])
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  propertyId  String
+  type        String
+  description String
+  date        DateTime
+  relatedId   String?
+  createdAt   DateTime @default(now())
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@index([date])
+  @@index([type])
+}
+
+model InviteToken {
+  id         String    @id @default(uuid())
+  token      String    @unique @default(uuid())
+  email      String
+  tenantId   String
+  landlordId String
+  propertyId String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+  landlord   Landlord  @relation(fields: [landlordId], references: [id])
+  property   Property  @relation(fields: [propertyId], references: [id])
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@index([token])
+  @@index([email])
+}
 
 enum Role {
   landlord
@@ -62,445 +378,3 @@ enum ReminderStatus {
   sent
   failed
 }
-
-/////////////////////
-// Core models
-/////////////////////
-
-model User {
-  id        String   @id @default(uuid())
-  name      String?
-  email     String   @unique
-  password  String? //made it optional for now 
-  createdAt DateTime @default(now())
-
-  landlord Landlord?
-  tenant   Tenant?
-
-  userRoles     UserRole[]
-  notifications Notification[]
-}
-
-model UserRole {
-  id         String   @id @default(uuid())
-  userId     String
-  role       Role
-  landlordId String?
-  createdAt  DateTime @default(now())
-
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  landlord Landlord? @relation(fields: [landlordId], references: [id])
-
-  @@index([userId])
-  @@index([landlordId])
-}
-
-model Landlord {
-  id           String   @id @default(uuid())
-  userId       String   @unique
-  name         String
-  contactPhone String?
-  createdAt    DateTime @default(now())
-
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenants    Tenant[]
-  properties Property[]
-  tenancies  Tenancy[]
-  bills      Bill[]
-  documents  Document[]
-  userRoles  UserRole[]
-
-  maintenanceRequests MaintenanceRequest[]
-  paymentReminders    PaymentReminder[]
-
-  inviteTokens InviteToken[]
-
-  @@index([userId])
-}
-
-model Tenant {
-  id         String   @id @default(uuid())
-  userId     String   @unique
-  landlordId String
-  fullName   String
-  address    String?
-  createdAt  DateTime @default(now())
-
-  // Contact
-  phone                String?
-  email                String?
-
-  // Emergency contact
-  emergencyContact      String?
-  emergencyContactPhone String?
-
-  // ID verification
-  idType               String?   // "Aadhaar" | "PAN" | "Passport"
-  idNumber             String?
-
-  // Police verification
-  policeVerificationNumber String?
-  policeVerificationDate   DateTime?
-
-  // Personal details
-  dateOfBirth          DateTime?
-  occupation           String?
-  workplace            String?
-  moveInDate           DateTime?
-
-  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  landlord            Landlord             @relation(fields: [landlordId], references: [id])
-  tenancies           Tenancy[]
-  bills               Bill[]
-  documents           Document[]
-  maintenanceRequests MaintenanceRequest[]
-  paymentReminders    PaymentReminder[]
-  inviteTokens InviteToken[]
-
-  @@index([userId])
-  @@index([landlordId])
-}
-
-model Property {
-  id           String   @id @default(uuid())
-  landlordId   String
-  address      String
-  description  String?
-  status       String   @default("VACANT")  // ← ADD THIS LINE
-  createdAt    DateTime @default(now())
-  
-  landlord            Landlord             @relation(fields: [landlordId], references: [id])
-  tenancies           Tenancy[]
-  bills               Bill[]
-  maintenanceRequests MaintenanceRequest[]
-  activityLogs        ActivityLog[]        // ← ADD THIS LINE
-  documents           Document[]  
-
-  inviteTokens InviteToken[]
-}
-
-model Tenancy {
-  id         String @id @default(uuid())
-  landlordId String
-  tenantId   String
-  propertyId String
-
-  leaseStart DateTime
-  leaseEnd   DateTime?
-  status     LeaseStatus
-  
-  monthlyRent     Decimal @db.Decimal(10, 2)  // ← ADD THIS LINE
-  securityDeposit Decimal @db.Decimal(10, 2)
-  currency        String  @default("USD")
-
-  createdAt DateTime  @default(now())
-  endedAt   DateTime?
-  
-  landlord Landlord @relation(fields: [landlordId], references: [id])
-  tenant   Tenant   @relation(fields: [tenantId], references: [id])
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  bills     Bill[]
-  documents Document[]
-
-  @@index([landlordId])
-  @@index([tenantId])
-  @@index([propertyId])
-}
-
-model Bill {
-  id         String @id @default(uuid())
-  landlordId String
-  tenancyId  String
-  tenantId   String
-  propertyId String
-
-  // Billing Period
-  month           DateTime
-  dueDate         DateTime
-
-  // Charges
-  rent            Decimal  @db.Decimal(10, 2)
-  
-  electricityUnits Int?
-  electricityRate  Decimal? @db.Decimal(10, 2)
-  electricityTotal Decimal? @db.Decimal(10, 2)
-  
-  waterBill       Decimal? @db.Decimal(10, 2)
-  carryForward    Decimal  @default(0) @db.Decimal(10, 2)
-  
-  // Totals
-  totalBill       Decimal  @db.Decimal(10, 2)
-  paidAmount      Decimal  @default(0) @db.Decimal(10, 2)
-  remainingAmount Decimal  @db.Decimal(10, 2)
-  
-  // Status
-  status   PaymentStatus
-  
-  // Notes
-  note     String?  @db.Text
-  
-  currency String   @default("INR")
-  
-  // Edit tracking
-  isEdited    Boolean   @default(false)
-  editedAt    DateTime?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  paymentReminders PaymentReminder[]
-
-  landlord Landlord @relation(fields: [landlordId], references: [id])
-  tenancy  Tenancy  @relation(fields: [tenancyId], references: [id], onDelete: Cascade)
-  tenant   Tenant   @relation(fields: [tenantId], references: [id])
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  documents Document[]
-  payments  Payment[]
-
-  ledgerEntries   LedgerEntry[]
-
-  @@index([landlordId])
-  @@index([tenancyId])
-  @@index([tenantId])
-  @@index([propertyId])
-  @@index([month])
-  @@unique([tenancyId, month])
-}
-model Payment {
-  id              String   @id @default(uuid())
-  
-  // Bill Link
-  billId          String
-  bill            Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
-  
-  // Payment Details
-  amount          Decimal  @db.Decimal(10, 2)
-  
-  // Dates
-  paidAt          DateTime
-  confirmedAt     DateTime?
-  
-  // Proof
-  paymentProof    String?
-  paymentMethod   String?
-  
-  // Verification (tenant confirms payment)
-  verifiedByTenant    Boolean   @default(false)
-  verifiedAt          DateTime?
-  
-  // Correction tracking
-  isCorrection        Boolean   @default(false)
-  correctionReason    String?
-  originalPaymentId   String?
-  
-  // Notes
-  note            String?   @db.Text
-  
-  // Timestamps
-  createdAt       DateTime @default(now())
-  
-  @@index([billId])
-  @@index([paidAt])
-}
-
-model LedgerEntry {
-  id String @id @default(uuid())
-  billId String
-  
-  entryDate DateTime
-  // ❌ REMOVE: entryType String  (no longer needed)
-  
-  description String
-  
-  // ✅ NEW: Meter reading fields
-  electricityPreviousReading Int?  // Auto-filled from last bill
-  electricityCurrentReading Int?   // User enters
-  electricityUnitsConsumed Int?    // Auto-calculated
-  electricityRate Decimal? @db.Decimal(10,2)
-  electricityTotal Decimal? @db.Decimal(10,2)  // Auto-calculated
-  
-  // ✅ CHANGE: Make optional
-  waterBill Decimal? @db.Decimal(10,2)
-  rentAmount Decimal? @db.Decimal(10,2)
-  
-  // Generic amounts
-  debitAmount Decimal? @db.Decimal(10,2)
-  creditAmount Decimal? @db.Decimal(10,2)
-  
-  // Payment details (all optional)
-  paymentMethod String?
-  paymentProof String?
-  
-  // Verification
-  verifiedByTenant Boolean @default(false)
-  verifiedAt DateTime?
-  
-  // Edit tracking
-  isEdited Boolean @default(false)
-  editedAt DateTime?
-  
-  // Metadata
-  createdBy String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
-  
-  @@index([billId])
-  @@index([entryDate])
-}
-
-
-
-model Document {
-  id           String   @id @default(uuid())
-  landlordId   String
-  propertyId   String
-  tenantId     String?
-  billId       String?
-  tenancyId    String?
-  
-  // Flexible fields (user-defined)
-  documentName String       // Auto-capitalized
-  category     String?      // Optional
-  description  String?      // Optional
-  
-  // File metadata
-  fileUrl      String
-  fileSize     Int?
-  mimeType     String?
-  
-  // Dates
-  uploadedAt   DateTime     @default(now())
-  documentDate DateTime?
-  
-  // Relations
-  landlord Landlord  @relation(fields: [landlordId], references: [id], onDelete: Cascade)
-  tenant   Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  bill     Bill?     @relation(fields: [billId], references: [id], onDelete: Cascade)
-  tenancy  Tenancy?  @relation(fields: [tenancyId], references: [id], onDelete: Cascade)
-  property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  @@index([landlordId])
-  @@index([propertyId])
-}
-
-/////////////////////
-// Operational models
-/////////////////////
-
-model PaymentReminder {
-  id         String @id @default(uuid())
-  landlordId String
-  billId     String
-  tenantId   String
-
-  status         ReminderStatus
-  reminderSentAt DateTime?
-  createdAt      DateTime       @default(now())
-
-  landlord Landlord @relation(fields: [landlordId], references: [id])
-  bill     Bill     @relation(fields: [billId], references: [id])
-  tenant   Tenant   @relation(fields: [tenantId], references: [id])
-
-  @@index([landlordId])
-  @@index([billId])
-}
-
-model Notification {
-  id        String           @id @default(uuid())
-  userId    String
-  type      NotificationType
-   title     String 
-  message   String
-  read      Boolean          @default(false)
-  sentAt    DateTime?
-  createdAt DateTime         @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-}
-
-model MaintenanceRequest {
-  id         String @id @default(uuid())
-  landlordId String
-  tenantId   String?
-  propertyId String
-
-  // Issue details
-  title       String
-  description String
-  category    String?
-  priority    String            @default("MEDIUM")
-
-  // Status tracking
-  status      MaintenanceStatus @default(requested)
-  resolutionNotes String?
-
-  // Dates
-  requestedAt DateTime          @default(now())
-  completedAt DateTime?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  landlord Landlord @relation(fields: [landlordId], references: [id])
-  tenant   Tenant?  @relation(fields: [tenantId], references: [id])
-  property Property @relation(fields: [propertyId], references: [id])
-
-  @@index([landlordId])
-  @@index([propertyId])
-  @@index([status])
-}
-model ActivityLog {
-  id              String   @id @default(uuid())
-  
-  // Property Link
-  propertyId      String
-  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  
-  // Activity Details
-  type            String
-  description     String
-  date            DateTime
-  
-  // Optional Links
-  relatedId       String?
-  
-  // Timestamps
-  createdAt       DateTime @default(now())
-  
-  @@index([propertyId])
-  @@index([date])
-  @@index([type])
-}
-model InviteToken {
-  id         String    @id @default(uuid())
-  token      String    @unique @default(uuid())
-  email      String
-  tenantId   String
-  landlordId String
-  propertyId String
-  expiresAt  DateTime
-  usedAt     DateTime?
-  createdAt  DateTime  @default(now())
-
-  tenant   Tenant   @relation(fields: [tenantId], references: [id])
-  landlord Landlord @relation(fields: [landlordId], references: [id])
-  property Property @relation(fields: [propertyId], references: [id])
-
-  @@index([token])
-  @@index([email])
-}
-
-model WaitlistEntry {
-  id          String    @id @default(uuid())
-  email       String    @unique     // prevents duplicate signups
-  firstName   String
-  joinedAt    DateTime  @default(now())
-  emailSent   Boolean   @default(false)  // tracks if welcome email was sent
-  emailSentAt DateTime?                  // when it was sent
-}
-

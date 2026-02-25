@@ -31,6 +31,7 @@ interface Document {
 
 interface PropertyTabsProps {
   propertyId: string;
+  currency?: string;
   activeTenancy: Record<string, unknown> | null;
   bills: Record<string, unknown>[];
   documents: Document[];
@@ -41,6 +42,7 @@ interface PropertyTabsProps {
 
 export function PropertyTabs({
   propertyId,
+  currency = "INR",
   activeTenancy,
   bills,
   documents,
@@ -84,6 +86,7 @@ export function PropertyTabs({
         {activeTab === "overview" && (
           <Overview
             propertyId={propertyId}
+            currency={currency}
             activeTenancy={activeTenancy}
             bills={bills}
             documents={documents as unknown as Record<string, unknown>[]}
@@ -98,6 +101,7 @@ export function PropertyTabs({
           <BillsLedger
             propertyId={propertyId}
             tenancyId={(activeTenancy?.id as string) || ""}
+            currency={currency}
             bills={bills}
           />
         )}

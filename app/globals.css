@@ -690,6 +690,150 @@ img {
 }
 
 /* ======================================
+   PROFILE PAGE
+   ====================================== */
+.profile-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 560px;
+}
+.profile-card {
+  background: #111;
+  border: 1px solid #1f1f1f;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+.profile-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 0.75rem;
+}
+.profile-section-sub {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: -0.4rem 0 1rem;
+}
+
+/* Account info rows */
+.profile-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+.profile-info-row:last-child {
+  border-bottom: none;
+}
+.profile-info-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+.profile-info-value {
+  font-size: 0.88rem;
+  color: #e5e7eb;
+  font-weight: 500;
+}
+
+/* Currency dropdown */
+.curr-drop-wrap {
+  position: relative;
+}
+.curr-drop-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  background: #0f1b2d;
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.curr-drop-trigger:hover:not(:disabled) {
+  border-color: #3b82f6;
+}
+.curr-drop-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.curr-drop-flag {
+  font-size: 1.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.curr-drop-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #60a5fa;
+}
+.curr-drop-symbol {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  font-weight: 400;
+}
+.curr-drop-name {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-left: auto;
+}
+.curr-drop-chevron {
+  font-size: 0.7rem;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+/* Dropdown popup */
+.curr-drop-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #0d0d0d;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
+  overflow-y: auto;
+  max-height: 220px;
+  z-index: 50;
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.curr-drop-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s;
+  text-align: left;
+}
+.curr-drop-option:hover {
+  background: #1a1a1a;
+}
+.curr-drop-option--active {
+  background: #0f1b2d;
+}
+.curr-drop-check {
+  margin-left: auto;
+  color: #60a5fa;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.profile-saving {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin: 0.5rem 0 0;
+  text-align: center;
+}
+
+/* ======================================
    ACTIVITY LOG (dark theme)
    ====================================== */
 .alog-wrap {
@@ -1120,6 +1264,91 @@ img {
 }
 .nav-logout {
   color: #ef4444;
+}
+
+/* ── Nav inline currency dropdown ─────────────── */
+.nav-currency-wrap {
+  position: relative;
+  padding: 0.2rem 0.5rem;
+}
+.nav-flag-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #d1d5db;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.nav-flag-btn:hover:not(:disabled) {
+  border-color: #3b82f6;
+}
+.nav-flag-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.nav-flag-code {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #60a5fa;
+}
+.nav-flag-chevron {
+  font-size: 0.65rem;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.nav-flag-list {
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  top: 100%;
+  background: #0d0d0d;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
+  overflow-y: auto;
+  max-height: 200px;
+  z-index: 200;
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0.2rem 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+.nav-flag-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: #d1d5db;
+  transition: background 0.1s;
+}
+.nav-flag-option:hover {
+  background: #1a1a1a;
+}
+.nav-flag-option--active {
+  background: #0f1b2d;
+  color: #60a5fa;
+}
+.nav-flag-opt-name {
+  color: #6b7280;
+  font-size: 0.75rem;
+  flex: 1;
+}
+.nav-flag-check {
+  color: #60a5fa;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: auto;
 }
 
 /* === Notification Popup === */

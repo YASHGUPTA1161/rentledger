@@ -32,6 +32,13 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     redirect("/dashboard/landlord");
   }
 
+  // Fetch landlord defaultCurrency
+  const landlord = await db.landlord.findUnique({
+    where: { id: landlordId },
+    select: { defaultCurrency: true },
+  });
+  const defaultCurrency = landlord?.defaultCurrency ?? "INR";
+
   // Fetch active tenancy
   const activeTenancy = await db.tenancy.findFirst({
     where: {
@@ -212,6 +219,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
       <h1>📍 {property.address}</h1>
       <PropertyTabs
         propertyId={property.id}
+        currency={defaultCurrency}
         activeTenancy={serializedTenancy}
         bills={serializedBills}
         documents={documentsData.documents || []}

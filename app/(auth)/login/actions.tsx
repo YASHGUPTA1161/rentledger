@@ -24,8 +24,13 @@ export async function loginAction(formData: FormData): Promise<FormState> {
   }
 
   const { email, password } = validationResult.data;
+  console.log("[LOGIN] step 1 — validated input for:", email);
   try {
     const user = await db.user.findUnique({ where: { email } });
+    console.log(
+      "[LOGIN] step 2 — user lookup:",
+      user ? `found id=${user.id}` : "NOT FOUND",
+    );
 
     if (
       !user ||
@@ -38,10 +43,12 @@ export async function loginAction(formData: FormData): Promise<FormState> {
       };
     }
 
+    console.log("[LOGIN] step 3 — attempting userRole.findFirst...");
     const userRole = await db.userRole.findFirst({
       where: { userId: user.id },
       include: { landlord: true },
     });
+    console.log("[LOGIN] step 4 — userRole:", userRole?.role ?? "NOT FOUND");
 
     if (!userRole) {
       return {
@@ -91,7 +98,16 @@ export async function loginAction(formData: FormData): Promise<FormState> {
     if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
       throw error;
     }
-    console.error("Login error: ", error);
+    // ── Full error dump so we can see EXACTLY what Prisma is complaining about
+    console.error("[LOGIN] CAUGHT ERROR:", {
+      message: error instanceof Error ? error.message : String(error),
+      code: (error as Record<string, unknown>)?.code,
+      meta: (error as Record<string, unknown>)?.meta, // ← shows missing column
+      stack:
+        error instanceof Error
+          ? error.stack?.split("\n").slice(0, 5)
+          : undefined,
+    });
     return {
       errors: { email: ["An unexpected error occurred. Please try again."] },
       fieldValues: { email, password: "" },

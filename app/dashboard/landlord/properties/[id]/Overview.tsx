@@ -1,7 +1,10 @@
 "use client";
 
+import { formatCurrency } from "@/lib/formatCurrency";
+
 interface OverviewProps {
   propertyId: string;
+  currency?: string;
   activeTenancy: Record<string, unknown> | null;
   bills: Record<string, unknown>[];
   documents: Record<string, unknown>[];
@@ -10,14 +13,6 @@ interface OverviewProps {
 }
 
 // ─── Helpers ───
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 function timeAgo(dateStr: string) {
   const now = new Date();
@@ -101,6 +96,7 @@ export function Overview({
   documents,
   maintenanceRequests,
   activityLogs,
+  currency = "INR",
 }: OverviewProps) {
   // ── Derived data ──
   const monthlyRent = (activeTenancy?.monthlyRent as number) || 0;
@@ -155,7 +151,9 @@ export function Overview({
       >
         <div style={statCardStyle}>
           <span style={labelStyle}>Monthly Rent</span>
-          <span style={valueStyle}>{formatCurrency(monthlyRent)}</span>
+          <span style={valueStyle}>
+            {formatCurrency(monthlyRent, currency)}
+          </span>
         </div>
 
         <div style={statCardStyle}>
@@ -244,7 +242,7 @@ export function Overview({
                     color: "#111827",
                   }}
                 >
-                  {formatCurrency(securityDeposit)}
+                  {formatCurrency(securityDeposit, currency)}
                 </p>
               </div>
             </div>
@@ -342,7 +340,7 @@ export function Overview({
                           fontWeight: 600,
                         }}
                       >
-                        {formatCurrency(bill.totalBill as number)}
+                        {formatCurrency(bill.totalBill as number, currency)}
                       </td>
                       <td
                         style={{
@@ -351,7 +349,7 @@ export function Overview({
                           color: "#059669",
                         }}
                       >
-                        {formatCurrency(bill.paidAmount as number)}
+                        {formatCurrency(bill.paidAmount as number, currency)}
                       </td>
                       <td style={{ textAlign: "center", padding: "10px 0" }}>
                         <span

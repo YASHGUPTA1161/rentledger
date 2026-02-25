@@ -33,6 +33,7 @@ export default async function DashboardLayout({
 
   // Only fetch tenants for landlord — used in notification popup
   let tenants: { id: string; fullName: string }[] = [];
+  let defaultCurrency = "INR";
   if (role === "landlord") {
     const landlordId = payload.landlordId as string;
     tenants = await withCache(CacheKeys.tenants(landlordId), TTL.tenants, () =>
@@ -41,6 +42,11 @@ export default async function DashboardLayout({
         select: { id: true, fullName: true },
       }),
     );
+    const landlord = await db.landlord.findUnique({
+      where: { id: landlordId },
+      select: { defaultCurrency: true },
+    });
+    defaultCurrency = landlord?.defaultCurrency ?? "INR";
   }
 
   return (
@@ -50,6 +56,7 @@ export default async function DashboardLayout({
         role={role}
         unreadCount={unreadCount}
         tenants={tenants}
+        currency={defaultCurrency}
       />
       <main className="dashboard-main">{children}</main>
     </div>

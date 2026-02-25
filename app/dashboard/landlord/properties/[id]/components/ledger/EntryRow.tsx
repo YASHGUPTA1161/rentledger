@@ -11,6 +11,7 @@ import {
   LEDGER_TOASTS,
   PROOF_LINK_LABEL,
 } from "./constants";
+import { formatCurrency } from "@/lib/formatCurrency";
 import type { EntryRowProps } from "./types";
 
 // ─── EntryRow ─────────────────────────────────────────────────
@@ -26,6 +27,7 @@ export function EntryRow({
   entry,
   isLandlord,
   isSelected,
+  currency = "INR",
   onToggleSelect,
   onDelete,
   isEditing,
@@ -188,14 +190,14 @@ export function EntryRow({
             name="electricityRate"
             defaultValue={entry.electricityRate || ""}
             step="0.01"
-            placeholder="₹0"
+            placeholder="0"
             className="ledger-input"
           />
         </td>
         <td>{entry.electricityUnitsConsumed || "-"}</td>
         <td>
           {entry.electricityTotal
-            ? `₹${entry.electricityTotal.toLocaleString()}`
+            ? formatCurrency(entry.electricityTotal, currency)
             : "-"}
         </td>
         <td>
@@ -204,7 +206,7 @@ export function EntryRow({
             name="waterBill"
             defaultValue={entry.waterBill || ""}
             step="0.01"
-            placeholder="₹0"
+            placeholder="0"
             className="ledger-input"
           />
         </td>
@@ -214,7 +216,7 @@ export function EntryRow({
             name="rentAmount"
             defaultValue={entry.rentAmount || ""}
             step="0.01"
-            placeholder="₹0"
+            placeholder="0"
             className="ledger-input"
           />
         </td>
@@ -224,7 +226,7 @@ export function EntryRow({
             name="debitAmount"
             defaultValue={entry.debitAmount || ""}
             step="0.01"
-            placeholder="₹0"
+            placeholder="0"
             className="ledger-input"
           />
         </td>
@@ -234,7 +236,7 @@ export function EntryRow({
             name="creditAmount"
             defaultValue={entry.creditAmount || ""}
             step="0.01"
-            placeholder="₹0"
+            placeholder="0"
             className="ledger-input"
           />
         </td>
@@ -324,22 +326,30 @@ export function EntryRow({
       <td>{new Date(entry.entryDate).toLocaleDateString()}</td>
       <td>{entry.description}</td>
       <td>{entry.electricityCurrentReading || "-"}</td>
-      <td>{entry.electricityRate ? `₹${entry.electricityRate}` : "-"}</td>
+      <td>
+        {entry.electricityRate
+          ? formatCurrency(entry.electricityRate, currency)
+          : "-"}
+      </td>
       <td>{entry.electricityUnitsConsumed || "-"}</td>
       <td>
         {entry.electricityTotal
-          ? `₹${entry.electricityTotal.toLocaleString()}`
+          ? formatCurrency(entry.electricityTotal, currency)
           : "-"}
       </td>
-      <td>{entry.waterBill ? `₹${entry.waterBill.toLocaleString()}` : "-"}</td>
       <td>
-        {entry.rentAmount ? `₹${entry.rentAmount.toLocaleString()}` : "-"}
+        {entry.waterBill ? formatCurrency(entry.waterBill, currency) : "-"}
       </td>
       <td>
-        {entry.debitAmount ? `₹${entry.debitAmount.toLocaleString()}` : "-"}
+        {entry.rentAmount ? formatCurrency(entry.rentAmount, currency) : "-"}
       </td>
       <td>
-        {entry.creditAmount ? `₹${entry.creditAmount.toLocaleString()}` : "-"}
+        {entry.debitAmount ? formatCurrency(entry.debitAmount, currency) : "-"}
+      </td>
+      <td>
+        {entry.creditAmount
+          ? formatCurrency(entry.creditAmount, currency)
+          : "-"}
       </td>
       <td>{entry.paymentMethod || "-"}</td>
       <td>

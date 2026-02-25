@@ -6,17 +6,20 @@ import { createBill, addPayment } from "./bills-actions";
 import { getBillPreviewData } from "./bill-preview-actions";
 import { LedgerTable } from "./LedgerTable";
 import { BillPreview } from "@/components/BillPreview";
+import { formatCurrency } from "@/lib/formatCurrency";
 import type { BillData } from "@/lib/generate-bill-data";
 
 interface BillsLedgerProps {
   propertyId: string;
   tenancyId: string;
-  bills: any[]; // Replace with proper type
+  currency?: string;
+  bills: any[]; // serialized bill objects from page.tsx
 }
 
 export function BillsLedger({
   propertyId,
   tenancyId,
+  currency = "INR",
   bills,
 }: BillsLedgerProps) {
   const [previewBillId, setPreviewBillId] = useState<string | null>(null);
@@ -103,28 +106,44 @@ export function BillsLedger({
                 <div>
                   <p className="bill-field-label">Rent</p>
                   <p className="bill-field-value">
-                    ₹{bill.rent.toLocaleString()}
+                    {formatCurrency(bill.rent, currency)}
                   </p>
                 </div>
                 <div>
                   <p className="bill-field-label">Electricity</p>
                   <p className="bill-field-value">
-                    {bill.electricityUnits ?? 0} units × ₹
-                    {bill.electricityRate ?? 0} = ₹
-                    {bill.electricityTotal?.toLocaleString() ?? "0"}
+                    {bill.electricityUnits ?? 0} units ×{" "}
+                    {formatCurrency(bill.electricityRate ?? 0, currency)} ={" "}
+                    {formatCurrency(bill.electricityTotal ?? 0, currency)}
                   </p>
                 </div>
                 <div>
                   <p className="bill-field-label">Water</p>
                   <p className="bill-field-value">
-                    ₹{bill.waterBill?.toLocaleString() ?? "0"}
+                    {formatCurrency(bill.waterBill ?? 0, currency)}
                   </p>
                 </div>
                 <div>
-                  <p className="bill-field-label">Carry Forward</p>
-                  <p className="bill-field-value">
-                    {bill.carryForward >= 0 ? "+" : ""}₹
-                    {bill.carryForward.toLocaleString()}
+                  <p className="bill-field-label">
+                    {bill.carryForward > 0
+                      ? "⚠ Debt Carried"
+                      : bill.carryForward < 0
+                        ? "✓ Credit Carried"
+                        : "Carry Forward"}
+                  </p>
+                  <p
+                    className="bill-field-value"
+                    style={{
+                      color:
+                        bill.carryForward > 0
+                          ? "#f87171"
+                          : bill.carryForward < 0
+                            ? "#4ade80"
+                            : undefined,
+                    }}
+                  >
+                    {bill.carryForward > 0 ? "+" : ""}
+                    {formatCurrency(bill.carryForward, currency)}
                   </p>
                 </div>
               </div>
@@ -133,19 +152,28 @@ export function BillsLedger({
                 <div>
                   <p className="bill-field-label">Total</p>
                   <p className="bill-total-value">
-                    ₹{bill.totalBill.toLocaleString()}
+                    {formatCurrency(bill.totalBill, currency)}
                   </p>
                 </div>
                 <div>
                   <p className="bill-field-label">Paid</p>
                   <p className="bill-total-value bill-total-value--paid">
-                    ₹{bill.paidAmount.toLocaleString()}
+                    {formatCurrency(bill.paidAmount, currency)}
                   </p>
                 </div>
                 <div>
                   <p className="bill-field-label">Remaining</p>
-                  <p className="bill-total-value bill-total-value--remaining">
-                    ₹{bill.remainingAmount.toLocaleString()}
+                  <p
+                    className={`bill-total-value ${
+                      bill.remainingAmount < 0
+                        ? "bill-total-value--paid" // green — overpaid
+                        : bill.remainingAmount > 0
+                          ? "bill-total-value--remaining" // red   — underpaid
+                          : "" // white — exactly paid
+                    }`}
+                  >
+                    {bill.remainingAmount < 0 && "Overpaid: "}
+                    {formatCurrency(bill.remainingAmount, currency)}
                   </p>
                 </div>
               </div>
@@ -193,6 +221,7 @@ export function BillsLedger({
                   billId={bill.id}
                   entries={bill.ledgerEntries || []}
                   isLandlord={true}
+                  currency={currency}
                 />
               </div>
 
