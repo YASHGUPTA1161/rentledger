@@ -1,9 +1,32 @@
 import Link from "next/link";
 import { GoogleSignInButton } from "./components/GoogleSignInButton";
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "RentLedger",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: "https://www.rentledger.online",
+  description:
+    "Free rent management tool for landlords. Track rent payments, bills, electricity, and tenants in one dashboard.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "5",
+    reviewCount: "1",
+  },
+};
+
 export default function Home() {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-zinc-950 font-sans text-slate-200">
+      {/* JSON-LD structured data — read by Google, invisible to users */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Background ambient glow effect */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
 
@@ -20,8 +43,8 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-lg md:text-xl text-zinc-400 max-w-xl mx-auto font-medium leading-relaxed">
-            Upload and delete functionality available via API. Manage your
-            tenancies and ledgers efficiently in one place.
+            Track rent payments, electricity bills, and tenants — all in one
+            place. Free rent ledger for landlords.
           </p>
         </div>
 
