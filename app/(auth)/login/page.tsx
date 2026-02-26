@@ -1,33 +1,45 @@
 import LoginForm from "./login-form";
 import Link from "next/link";
-import Image from "next/image";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Login | RentLedger",
+};
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black font-sans text-white relative px-4">
-      {/* Background Image (Using a black background as requested, but if you want an image, you'd add it here) */}
-      <div className="absolute inset-0 z-0">
-         {/* Since you said "as for bg image make it black", I'm making the whole background black instead of adding an image */}
-         <div className="w-full h-full bg-black/90" />
-      </div>
+    <div className="auth-shell">
+      {/* LEFT — form panel */}
+      <div className="auth-left">
+        <div className="auth-form-wrap">
+          {/* Heading */}
+          <div className="auth-heading">
+            <h1 className="auth-title">Welcome Back 👋</h1>
+            <p className="auth-subtitle">
+              Today is a new day. It&apos;s your day. You shape it.
+              <br />
+              Sign in to start managing your rentals.
+            </p>
+          </div>
 
-      {/* Centered Form Container */}
-      <div className="w-full max-w-[450px] z-10 flex flex-col items-center">
-        {/* Branding / Header */}
-        <div className="mb-4 text-center">
-             <h1 className="text-[28px] font-normal text-white mb-8 tracking-wide">
-                Login <span className="text-gray-300">#10</span>
-             </h1>
-          <h2 className="text-[32px] font-normal text-white">
-            Have an account?
-          </h2>
-        </div>
-
-        {/* The Login Form Component */}
-        <div className="w-full">
           <LoginForm />
+
+          {/* Bottom link */}
+          <p className="auth-switch">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="auth-switch-link">
+              Sign up
+            </Link>
+          </p>
+
+          <p className="auth-copyright">
+            © {new Date().getFullYear()} RentLedger. All rights reserved.
+          </p>
         </div>
       </div>
+
+      {/* RIGHT — placeholder black panel */}
+      <div className="auth-right" />
     </div>
   );
 }

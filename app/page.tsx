@@ -79,8 +79,16 @@ export default function Home() {
       </main>
 
       {/* Minimal Footer */}
-      <footer className="absolute bottom-6 text-sm text-zinc-500">
-        © {new Date().getFullYear()} RentLedger. All rights reserved.
+      <footer className="absolute bottom-6 flex items-center gap-4 text-sm text-zinc-500">
+        <span>© {new Date().getFullYear()} RentLedger</span>
+        <span>·</span>
+        <Link href="/privacy" className="hover:text-zinc-300 transition-colors">
+          Privacy Policy
+        </Link>
+        <span>·</span>
+        <Link href="/terms" className="hover:text-zinc-300 transition-colors">
+          Terms
+        </Link>
       </footer>
     </div>
   );

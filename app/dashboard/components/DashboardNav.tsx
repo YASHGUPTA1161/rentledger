@@ -1,11 +1,38 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useRef, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { NotificationPopup } from "./NotificationPopup";
 import { CURRENCIES } from "@/lib/currencies";
 import { updateCurrency } from "../profile/profile-actions";
 import toast from "react-hot-toast";
+
+// Curated gradient palettes — dark-friendly, high contrast
+const AVATAR_PALETTES = [
+  { background: "linear-gradient(135deg, #667eea, #764ba2)", color: "#fff" },
+  { background: "linear-gradient(135deg, #f093fb, #f5576c)", color: "#fff" },
+  { background: "linear-gradient(135deg, #4facfe, #00f2fe)", color: "#fff" },
+  { background: "linear-gradient(135deg, #43e97b, #38f9d7)", color: "#fff" },
+  { background: "linear-gradient(135deg, #fa709a, #fee140)", color: "#fff" },
+  { background: "linear-gradient(135deg, #f6d365, #fda085)", color: "#fff" },
+  { background: "linear-gradient(135deg, #a18cd1, #fbc2eb)", color: "#fff" },
+  { background: "linear-gradient(135deg, #0ba360, #3cba92)", color: "#fff" },
+  { background: "linear-gradient(135deg, #1688fe, #0050c7)", color: "#fff" },
+  { background: "linear-gradient(135deg, #ff6f5b, #df7e69)", color: "#fff" },
+  { background: "linear-gradient(135deg, #27cfb1, #1688fe)", color: "#fff" },
+  { background: "linear-gradient(135deg, #f7971e, #ffd200)", color: "#fff" },
+];
+
+// Deterministic: same name → same gradient, always
+function getAvatarStyle(name: string): { background: string; color: string } {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash |= 0; // force 32-bit integer
+  }
+  return AVATAR_PALETTES[Math.abs(hash) % AVATAR_PALETTES.length];
+}
 
 interface Props {
   userName: string;
@@ -75,7 +102,13 @@ export function DashboardNav({
     <>
       <nav className="dashboard-nav">
         <Link href={home} className="nav-logo">
-          🏠 RentLedger
+          <Image
+            src="/logo/logo-with-bg.svg"
+            alt="RentLedger"
+            width={140}
+            height={36}
+            priority
+          />
         </Link>
         <div className="nav-right">
           {/* Bell */}
@@ -102,17 +135,12 @@ export function DashboardNav({
 
           {/* Avatar + dropdown */}
           <div className="nav-avatar-wrap">
-            <button className="nav-avatar-btn" onClick={() => setOpen(!open)}>
-              {userImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={userImage}
-                  alt={userName}
-                  className="nav-avatar-pfp"
-                />
-              ) : (
-                userName.charAt(0).toUpperCase()
-              )}
+            <button
+              className="nav-avatar-btn"
+              onClick={() => setOpen(!open)}
+              style={getAvatarStyle(userName)}
+            >
+              {userName.charAt(0).toUpperCase()}
             </button>
 
             {open && (

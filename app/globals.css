@@ -2093,3 +2093,330 @@ img {
 .docs-footer-link:hover {
   text-decoration: underline;
 }
+
+/* ======================================
+   LEGAL PAGES — /privacy  /terms
+   ====================================== */
+.legal-page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #e5e7eb;
+  padding: 4rem 1.5rem 6rem;
+}
+
+.legal-container {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.legal-title {
+  font-family: "Courier New", Courier, monospace;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  margin: 0 0 2.5rem;
+  line-height: 1.2;
+}
+
+.legal-updated {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0 0 2rem;
+  letter-spacing: 0.02em;
+}
+
+.legal-section {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 2.5rem 0 0.85rem;
+  letter-spacing: 0.03em;
+}
+
+.legal-body {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.875rem;
+  line-height: 1.85;
+  color: #d1d5db;
+  margin: 0 0 1.25rem;
+  letter-spacing: 0.01em;
+}
+
+.legal-link {
+  color: #d1d5db;
+  text-decoration: underline;
+  text-decoration-color: #4b5563;
+  transition: color 0.15s;
+}
+
+.legal-link:hover {
+  color: #ffffff;
+  text-decoration-color: #9ca3af;
+}
+
+/* ======================================
+   AUTH PAGES — /login  /signup
+   Two-column: form left, image right
+   ====================================== */
+
+/* Outer shell — full height, two columns */
+.auth-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+/* LEFT panel */
+.auth-left {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 2rem;
+  background: #ffffff;
+  overflow-y: hidden;
+}
+
+.auth-form-wrap {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.auth-logo-link {
+  display: inline-block;
+  margin-bottom: 1.25rem;
+}
+
+/* Heading block */
+.auth-heading {
+  margin-bottom: 1rem;
+}
+
+.auth-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem;
+  line-height: 1.2;
+}
+
+.auth-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Form itself */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Field wrapper */
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.auth-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.01em;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #111827;
+  background: #ffffff;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.auth-input::placeholder {
+  color: #9ca3af;
+}
+
+.auth-input:focus {
+  border-color: #1d2c43;
+  box-shadow: 0 0 0 3px rgba(29, 44, 67, 0.08);
+}
+
+.auth-error {
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin: 0;
+}
+
+/* Forgot password row */
+.auth-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+.auth-forgot {
+  font-size: 0.8rem;
+  color: #6b7280;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.auth-forgot:hover {
+  color: #111827;
+}
+
+/* Primary CTA button */
+.auth-btn-primary {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: #1d2c43;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.1s;
+  margin-top: 0.1rem;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  background: #162136;
+}
+
+.auth-btn-primary:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Or divider */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0;
+}
+
+.auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.auth-divider-text {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+/* Social button */
+.auth-btn-social {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.auth-btn-social:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Switch link row */
+.auth-switch {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  text-align: center;
+  margin-top: 0.85rem;
+  margin-bottom: 0;
+}
+
+.auth-switch-link {
+  color: #1d2c43;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-switch-link:hover {
+  text-decoration: underline;
+}
+
+/* Copyright */
+.auth-copyright {
+  font-size: 0.7rem;
+  color: #d1d5db;
+  text-align: center;
+  margin-top: 1rem;
+  margin-bottom: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* RIGHT panel — image */
+.auth-right {
+  flex: 1;
+  height: calc(100% - 2rem);
+  margin: 1rem 1rem 1rem 0;
+  position: relative;
+  background: #111111;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.auth-right-img {
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 768px) {
+  .auth-shell {
+    flex-direction: column;
+  }
+
+  .auth-left {
+    flex: none;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .auth-right {
+    min-height: 260px;
+    flex: none;
+  }
+}

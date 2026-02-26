@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: "/logo/og-image.png",
         width: 1200,
         height: 630,
         alt: "RentLedger — Rent Management for Landlords",
@@ -63,12 +63,26 @@ export const metadata: Metadata = {
     title: "RentLedger — Rent Management for Landlords",
     description:
       "Track rent, bills, and tenants in one place. Free for landlords.",
-    images: ["/og-image.png"],
+    images: ["/logo/og-image.png"],
   },
   robots: {
     index: true,
     follow: true,
     googleBot: { index: true, follow: true },
+  },
+  icons: {
+    icon: [
+      { url: "/logo/logo-32.png", sizes: "32x32", type: "image/png" },
+      {
+        url: "/logo/Rent Ledger (192 x 192 px).png",
+        sizes: "192x192",
+        type: "image/png",
+      },
+    ],
+    apple: [
+      { url: "/logo/logo-apple-180.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/logo/logo-32.png",
   },
 };
 
