@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { updateProperty, deleteProperty } from "./actions";
+import "./PropertyList.css";
 
 interface Property {
   id: string;
@@ -13,209 +14,213 @@ interface Property {
 }
 
 export function PropertyList({ properties }: { properties: Property[] }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  function toggleExpand(id: string) {
+    // Collapsing resets edit mode too
+    setExpandedId((prev) => (prev === id ? null : id));
+    if (editingId === id) setEditingId(null);
+  }
+
   return (
-    <ul style={{ listStyle: "none", padding: 0 }}>
-      {properties.map((property) => (
-        <li
-          key={property.id}
-          style={{
-            marginBottom: "1rem",
-            padding: "1rem",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-          }}
-        >
-          {editingId === property.id ? (
-            // EDIT MODE: Show inline edit form
-            <form
-              action={updateProperty}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.5rem",
-              }}
+    <ul className="plist">
+      {properties.map((property) => {
+        const isExpanded = expandedId === property.id;
+        const isEditing = editingId === property.id;
+
+        return (
+          <li
+            key={property.id}
+            className={`plist-card${isExpanded ? " plist-card--open" : ""}`}
+          >
+            {/* ── Collapsed header — always visible ─────────────────────── */}
+            <button
+              className="plist-header"
+              onClick={() => toggleExpand(property.id)}
+              aria-expanded={isExpanded}
             >
-              <input type="hidden" name="propertyId" value={property.id} />
-
-              <div>
-                <label htmlFor={`address-${property.id}`}>Address:</label>
-                <input
-                  type="text"
-                  id={`address-${property.id}`}
-                  name="address"
-                  defaultValue={property.address}
-                  style={{ width: "100%", padding: "8px" }}
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor={`description-${property.id}`}>
-                  Description:
-                </label>
-                <textarea
-                  id={`description-${property.id}`}
-                  name="description"
-                  defaultValue={property.description || ""}
-                  style={{ width: "100%", padding: "8px", minHeight: "60px" }}
-                />
-              </div>
-
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button
-                  type="submit"
-                  style={{
-                    padding: "8px 16px",
-                    background: "#28a745",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  ✅ Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditingId(null)}
-                  style={{
-                    padding: "8px 16px",
-                    background: "#6c757d",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  ❌ Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
-            // VIEW MODE: Show property details + Edit/Delete buttons
-            <>
-              <Link
-                href={`/dashboard/landlord/properties/${property.id}`}
-                style={{
-                  textDecoration: "none",
-                  color: "inherit",
-                  fontWeight: "bold",
-                }}
+              <span className="plist-pin">📍</span>
+              <span className="plist-address">{property.address}</span>
+              <span
+                className={`plist-chevron${isExpanded ? " plist-chevron--up" : ""}`}
               >
-                📍 {property.address}
-              </Link>
-              {property.description && (
-                <p style={{ margin: "0.5rem 0 0 0", color: "#666" }}>
-                  {property.description}
-                </p>
-              )}
-              <small
-                style={{ color: "#999", display: "block", marginTop: "0.5rem" }}
-              >
-                Added: {new Date(property.createdAt).toLocaleDateString()}
-              </small>
+                ‹
+              </span>
+            </button>
 
-              <div
-                style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}
-              >
-                <button
-                  onClick={() => setEditingId(property.id)}
-                  style={{
-                    padding: "6px 12px",
-                    background: "#007bff",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  ✏️ Edit
-                </button>
+            {/* ── Expanded body ──────────────────────────────────────────── */}
+            {isExpanded && (
+              <div className="plist-body">
+                {isEditing ? (
+                  /* ── EDIT FORM ───────────────────────────────────────── */
+                  <form action={updateProperty} className="plist-edit-form">
+                    <input
+                      type="hidden"
+                      name="propertyId"
+                      value={property.id}
+                    />
 
-                <form action={deleteProperty} style={{ display: "inline" }}>
-                  <input type="hidden" name="propertyId" value={property.id} />
-                  <button
-                    type="submit"
-                    style={{
-                      padding: "6px 12px",
-                      background: "#dc3545",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
+                    <div className="plist-field">
+                      <label
+                        htmlFor={`addr-${property.id}`}
+                        className="plist-label"
+                      >
+                        Address
+                      </label>
+                      <input
+                        id={`addr-${property.id}`}
+                        type="text"
+                        name="address"
+                        defaultValue={property.address}
+                        className="plist-input"
+                        required
+                      />
+                    </div>
 
-                      // CAPTURE FORM REFERENCE IMMEDIATELY
-                      // React nullifies event properties after handler completes
-                      // So we must grab the form ref BEFORE showing the toast
-                      const form = e.currentTarget.closest("form");
+                    <div className="plist-field">
+                      <label
+                        htmlFor={`desc-${property.id}`}
+                        className="plist-label"
+                      >
+                        Notes
+                      </label>
+                      <textarea
+                        id={`desc-${property.id}`}
+                        name="description"
+                        defaultValue={property.description ?? ""}
+                        className="plist-textarea"
+                      />
+                    </div>
 
-                      if (!form) {
-                        console.error("Form not found");
-                        return;
-                      }
+                    <div className="plist-actions">
+                      <button
+                        type="submit"
+                        className="plist-btn plist-btn--save"
+                      >
+                        ✅ Save
+                      </button>
+                      <button
+                        type="button"
+                        className="plist-btn plist-btn--cancel"
+                        onClick={() => setEditingId(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  /* ── VIEW MODE ───────────────────────────────────────── */
+                  <>
+                    {property.description && (
+                      <p className="plist-desc">{property.description}</p>
+                    )}
 
-                      toast(
-                        (t) => (
-                          <div>
-                            <p
-                              style={{ marginBottom: "8px", fontWeight: "500" }}
-                            >
-                              Delete this property?
-                            </p>
-                            <div style={{ display: "flex", gap: "8px" }}>
-                              <button
-                                onClick={() => {
-                                  toast.dismiss(t.id);
-                                  // Use captured form reference (not e.currentTarget)
-                                  form.requestSubmit();
-                                }}
-                                style={{
-                                  padding: "6px 12px",
-                                  backgroundColor: "#ef4444",
-                                  color: "white",
-                                  border: "none",
-                                  borderRadius: "4px",
-                                  cursor: "pointer",
-                                }}
-                              >
-                                Delete
-                              </button>
-                              <button
-                                onClick={() => toast.dismiss(t.id)}
-                                style={{
-                                  padding: "6px 12px",
-                                  backgroundColor: "#6b7280",
-                                  color: "white",
-                                  border: "none",
-                                  borderRadius: "4px",
-                                  cursor: "pointer",
-                                }}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ),
+                    <p className="plist-date">
+                      Added{" "}
+                      {new Date(property.createdAt).toLocaleDateString(
+                        "en-IN",
                         {
-                          duration: 5000,
-                          position: "bottom-right",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
                         },
-                      );
-                    }}
-                  >
-                    🗑️ Delete
-                  </button>
-                </form>
+                      )}
+                    </p>
+
+                    <div className="plist-actions">
+                      {/* View property page */}
+                      <Link
+                        href={`/dashboard/landlord/properties/${property.id}`}
+                        className="plist-btn plist-btn--view"
+                      >
+                        Open →
+                      </Link>
+
+                      {/* Edit */}
+                      <button
+                        className="plist-btn plist-btn--edit"
+                        onClick={() => setEditingId(property.id)}
+                      >
+                        ✏️ Edit
+                      </button>
+
+                      {/* Delete with toast confirm */}
+                      <form
+                        action={deleteProperty}
+                        style={{ display: "inline" }}
+                      >
+                        <input
+                          type="hidden"
+                          name="propertyId"
+                          value={property.id}
+                        />
+                        <button
+                          type="submit"
+                          className="plist-btn plist-btn--delete"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const form = e.currentTarget.closest("form");
+                            if (!form) return;
+                            toast(
+                              (t) => (
+                                <div>
+                                  <p
+                                    style={{
+                                      marginBottom: "8px",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    Delete this property?
+                                  </p>
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    <button
+                                      onClick={() => {
+                                        toast.dismiss(t.id);
+                                        form.requestSubmit();
+                                      }}
+                                      style={{
+                                        padding: "6px 12px",
+                                        background: "#ef4444",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                    <button
+                                      onClick={() => toast.dismiss(t.id)}
+                                      style={{
+                                        padding: "6px 12px",
+                                        background: "#6b7280",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ),
+                              { duration: 5000, position: "bottom-right" },
+                            );
+                          }}
+                        >
+                          🗑️ Delete
+                        </button>
+                      </form>
+                    </div>
+                  </>
+                )}
               </div>
-            </>
-          )}
-        </li>
-      ))}
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

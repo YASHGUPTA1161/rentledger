@@ -1,0 +1,200 @@
+/* Expandable Property List */
+
+.plist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Card shell */
+.plist-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  transition: box-shadow 0.15s;
+}
+
+.plist-card:hover {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.plist-card--open {
+  border-color: #1d2c43;
+  box-shadow: 0 2px 12px rgba(29, 44, 67, 0.08);
+}
+
+/* ── Collapsed header ───────────────────────────────────────── */
+.plist-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.plist-header:hover {
+  background: #f9fafb;
+}
+
+.plist-pin {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.plist-address {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chevron — rotates when expanded */
+.plist-chevron {
+  font-size: 1.2rem;
+  color: #9ca3af;
+  transform: rotate(-90deg);
+  display: inline-block;
+  transition: transform 0.2s ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.plist-chevron--up {
+  transform: rotate(90deg);
+}
+
+/* ── Expanded body ──────────────────────────────────────────── */
+.plist-body {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid #f3f4f6;
+  animation: plist-slide-in 0.15s ease;
+}
+
+@keyframes plist-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.plist-desc {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0.75rem 0 0;
+  line-height: 1.5;
+}
+
+.plist-date {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin: 0.35rem 0 0.9rem;
+}
+
+/* ── Action row ─────────────────────────────────────────────── */
+.plist-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+/* Base button */
+.plist-btn {
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.4rem 0.85rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: opacity 0.15s;
+}
+
+.plist-btn:hover {
+  opacity: 0.85;
+}
+
+.plist-btn--view {
+  background: #f3f4f6;
+  color: #374151;
+}
+.plist-btn--edit {
+  background: #1d2c43;
+  color: #fff;
+}
+.plist-btn--delete {
+  background: #ef4444;
+  color: #fff;
+}
+.plist-btn--save {
+  background: #15803d;
+  color: #fff;
+}
+.plist-btn--cancel {
+  background: #6b7280;
+  color: #fff;
+}
+
+/* ── Edit form ──────────────────────────────────────────────── */
+.plist-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.plist-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.plist-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.plist-input,
+.plist-textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.plist-input:focus,
+.plist-textarea:focus {
+  border-color: #1d2c43;
+}
+
+.plist-textarea {
+  min-height: 70px;
+  resize: vertical;
+}
