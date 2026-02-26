@@ -3,16 +3,70 @@ import { PropertyList } from "./PropertyList";
 import db from "@/lib/prisma";
 import { cookies } from "next/headers";
 import * as jose from "jose";
+import RentalBarChart from "./RentalBarChart";
 
 export default async function LandlordDashboard() {
-  // Get landlordId from JWT
+  // ── Auth ──────────────────────────────────────────────────────────────────
   const sessionCookie = (await cookies()).get("session")?.value;
   const secret = new TextEncoder().encode(process.env.JWT_SECRET);
   const { payload } = await jose.jwtVerify(sessionCookie!, secret);
   const landlordId = payload.landlordId as string;
 
-  // Fetch THIS landlord's properties only
+  // ── Properties ────────────────────────────────────────────────────────────
   const properties = await db.property.findMany({
+    where: { landlordId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, address: true },
+  });
+
+  // ── Raw ledger entries — last 24 months ──────────────────────────────────
+  // LedgerEntry has the ACTUAL recorded amounts per transaction.
+  // Bill.rent etc. can be 0 if the landlord never updated the bill card.
+  const twentyFourMonthsAgo = new Date();
+  twentyFourMonthsAgo.setMonth(twentyFourMonthsAgo.getMonth() - 23);
+  twentyFourMonthsAgo.setDate(1);
+  twentyFourMonthsAgo.setHours(0, 0, 0, 0);
+
+  const ledgerEntries = await db.ledgerEntry.findMany({
+    where: {
+      bill: { landlordId },
+      entryDate: { gte: twentyFourMonthsAgo },
+    },
+    select: {
+      debitAmount: true, // total amount billed in this entry
+      creditAmount: true, // amount paid / collected
+      rentAmount: true,
+      electricityTotal: true,
+      waterBill: true,
+      bill: {
+        select: {
+          month: true, // which month this bill belongs to
+          propertyId: true,
+        },
+      },
+    },
+    orderBy: { entryDate: "asc" },
+  });
+
+  // Serialize — Decimal → number, DateTime → ISO string
+  const billsForClient = ledgerEntries.map((e) => ({
+    propertyId: e.bill.propertyId,
+    month: e.bill.month.toISOString(),
+    rent: Number(e.rentAmount ?? 0),
+    electricity: Number(e.electricityTotal ?? 0),
+    water: Number(e.waterBill ?? 0),
+    collected: Number(e.creditAmount ?? 0),
+  }));
+
+  // ── Currency ──────────────────────────────────────────────────────────────
+  const landlord = await db.landlord.findUnique({
+    where: { id: landlordId },
+    select: { defaultCurrency: true },
+  });
+  const currency = landlord?.defaultCurrency ?? "INR";
+
+  // ── Fetch all properties for PropertyList (needs full shape) ───────────────
+  const propertiesFull = await db.property.findMany({
     where: { landlordId },
     orderBy: { createdAt: "desc" },
   });
@@ -20,15 +74,23 @@ export default async function LandlordDashboard() {
   return (
     <div style={{ padding: "2rem" }}>
       <h1>🏠 Landlord Dashboard</h1>
-      {/* Property List */}
-      <h2>My Properties({properties.length})</h2>
-      {properties.length === 0 ? (
+
+      {/* ── Revenue Chart ─────────────────────────────────────────────────── */}
+      <RentalBarChart
+        rawBills={billsForClient}
+        properties={properties}
+        currency={currency}
+      />
+
+      {/* ── Property List ─────────────────────────────────────────────────── */}
+      <h2>My Properties ({propertiesFull.length})</h2>
+      {propertiesFull.length === 0 ? (
         <p>No Properties yet. Add one below!</p>
       ) : (
-        <PropertyList properties={properties} />
+        <PropertyList properties={propertiesFull} />
       )}
-      {/* Add Property Form */}
 
+      {/* ── Add Property Form ─────────────────────────────────────────────── */}
       <h2>Add New Property</h2>
       <form
         action={createProperty}
@@ -52,7 +114,6 @@ export default async function LandlordDashboard() {
             required
           />
         </div>
-
         <div>
           <label htmlFor="description">Notes (optional):</label>
           <textarea
@@ -62,7 +123,6 @@ export default async function LandlordDashboard() {
             style={{ width: "100%", padding: "8px", minHeight: "80px" }}
           />
         </div>
-
         <button
           type="submit"
           style={{
