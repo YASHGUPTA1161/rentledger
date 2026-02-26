@@ -73,8 +73,9 @@ export default async function LandlordDashboard() {
   });
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>🏠 Landlord Dashboard</h1>
+    <div className="dashboard-content">
+      {/* ── Page header ─────────────────────────────────────────────────────── */}
+      <h1 className="dashboard-page-title">Landlord Dashboard</h1>
 
       {/* ── Stat Cards ───────────────────────────────────────────────────── */}
       <DashboardStats landlordId={landlordId} />
@@ -87,9 +88,11 @@ export default async function LandlordDashboard() {
       />
 
       {/* ── Property List ─────────────────────────────────────────────────── */}
-      <h2>My Properties ({propertiesFull.length})</h2>
+      <h2 className="dashboard-section-title">
+        My Properties ({propertiesFull.length})
+      </h2>
       {propertiesFull.length === 0 ? (
-        <p>No Properties yet. Add one below!</p>
+        <p className="dashboard-empty">No properties yet. Add one below!</p>
       ) : (
         <PropertyList properties={propertiesFull} />
       )}

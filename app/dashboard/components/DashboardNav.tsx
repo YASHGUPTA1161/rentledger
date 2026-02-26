@@ -100,103 +100,101 @@ export function DashboardNav({
 
   return (
     <>
-      <nav className="dashboard-nav">
-        <Link href={home} className="nav-logo">
-          <Image
-            src="/logo/logo-with-bg.svg"
-            alt="RentLedger"
-            width={140}
-            height={36}
-            priority
-          />
-        </Link>
-        <div className="nav-right">
-          {/* Bell */}
-          <button
-            className="nav-bell"
-            onClick={() => setPopupOpen(true)}
-            title={`${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`}
-          >
-            🔔{" "}
-            {unreadCount > 0 && (
-              <span className="nav-badge">{unreadCount}</span>
-            )}
-          </button>
+      <nav className="navbar-wrapper">
+        <div className="flex bg-white w-fit px-1.25 py-1.25 shadow-box-up rounded-2xl dark:bg-box-dark dark:shadow-box-dark-out">
+          <div className="dark:shadow-buttons-box-dark rounded-2xl w-full px-1.5 py-1.5 md:px-3 md:py-3 flex items-center">
+            <div className="nav-right">
+              {/* Bell */}
+              <button
+                className="nav-bell"
+                onClick={() => setPopupOpen(true)}
+                title={`${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`}
+              >
+                🔔{" "}
+                {unreadCount > 0 && (
+                  <span className="nav-badge">{unreadCount}</span>
+                )}
+              </button>
 
-          <Link href="/dashboard/docs" className="nav-contact-link">
-            Docs
-          </Link>
-          <Link href="/contact" className="nav-contact-link">
-            Contact
-          </Link>
-          <Link href="/pricing" className="nav-contact-link">
-            Pricing
-          </Link>
+              <Link href="/dashboard/docs" className="nav-contact-link">
+                Docs
+              </Link>
+              <Link href="/contact" className="nav-contact-link">
+                Contact
+              </Link>
+              <Link href="/pricing" className="nav-contact-link">
+                Pricing
+              </Link>
 
-          {/* Avatar + dropdown */}
-          <div className="nav-avatar-wrap">
-            <button
-              className="nav-avatar-btn"
-              onClick={() => setOpen(!open)}
-              style={getAvatarStyle(userName)}
-            >
-              {userName.charAt(0).toUpperCase()}
-            </button>
+              {/* Avatar + dropdown */}
+              <div className="nav-avatar-wrap">
+                <button
+                  className="nav-avatar-btn"
+                  onClick={() => setOpen(!open)}
+                  style={getAvatarStyle(userName)}
+                >
+                  {userName.charAt(0).toUpperCase()}
+                </button>
 
-            {open && (
-              <div className="nav-dropdown">
-                <p className="nav-user-name">{userName}</p>
-                {userEmail && <p className="nav-user-email">{userEmail}</p>}
-                <p className="nav-user-role">{role}</p>
+                {open && (
+                  <div className="nav-dropdown">
+                    <p className="nav-user-name">{userName}</p>
+                    {userEmail && <p className="nav-user-email">{userEmail}</p>}
+                    <p className="nav-user-role">{role}</p>
 
-                {/* ── Currency flag button ── */}
-                {role === "landlord" && (
-                  <div className="nav-currency-wrap" ref={flagRef}>
-                    <button
-                      className="nav-flag-btn"
-                      onClick={() => setFlagOpen((v) => !v)}
-                      disabled={isPending}
-                      title="Change currency"
-                    >
-                      <span>{activeCurrency.flag}</span>
-                      <span className="nav-flag-code">
-                        {activeCurrency.code}
-                      </span>
-                      <span className="nav-flag-chevron">
-                        {flagOpen ? "▴" : "▾"}
-                      </span>
-                    </button>
+                    {/* ── Currency flag button ── */}
+                    {role === "landlord" && (
+                      <div className="nav-currency-wrap" ref={flagRef}>
+                        <button
+                          className="nav-flag-btn"
+                          onClick={() => setFlagOpen((v) => !v)}
+                          disabled={isPending}
+                          title="Change currency"
+                        >
+                          <span>{activeCurrency.flag}</span>
+                          <span className="nav-flag-code">
+                            {activeCurrency.code}
+                          </span>
+                          <span className="nav-flag-chevron">
+                            {flagOpen ? "▴" : "▾"}
+                          </span>
+                        </button>
 
-                    {flagOpen && (
-                      <ul className="nav-flag-list">
-                        {CURRENCIES.map((c) => (
-                          <li key={c.code}>
-                            <button
-                              className={`nav-flag-option${c.code === currSelected ? " nav-flag-option--active" : ""}`}
-                              onClick={() => handleCurrencySelect(c.code)}
-                            >
-                              <span>{c.flag}</span>
-                              <span>{c.code}</span>
-                              <span className="nav-flag-opt-name">
-                                {c.label}
-                              </span>
-                              {c.code === currSelected && (
-                                <span className="nav-flag-check">✓</span>
-                              )}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
+                        {flagOpen && (
+                          <ul className="nav-flag-list">
+                            {CURRENCIES.map((c) => (
+                              <li key={c.code}>
+                                <button
+                                  className={`nav-flag-option${c.code === currSelected ? " nav-flag-option--active" : ""}`}
+                                  onClick={() => handleCurrencySelect(c.code)}
+                                >
+                                  <span>{c.flag}</span>
+                                  <span>{c.code}</span>
+                                  <span className="nav-flag-opt-name">
+                                    {c.label}
+                                  </span>
+                                  {c.code === currSelected && (
+                                    <span className="nav-flag-check">✓</span>
+                                  )}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     )}
+
+                    <hr className="nav-divider" />
+                    <button
+                      onClick={logout}
+                      className="nav-drop-item nav-logout"
+                    >
+                      Logout
+                    </button>
                   </div>
                 )}
-
-                <hr className="nav-divider" />
-                <button onClick={logout} className="nav-drop-item nav-logout">
-                  Logout
-                </button>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </nav>

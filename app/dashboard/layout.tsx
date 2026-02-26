@@ -51,7 +51,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="dashboard-shell">
+    <div className="page-background">
       <DashboardNav
         userName={user?.name ?? user?.email ?? "User"}
         userEmail={user?.email ?? undefined}

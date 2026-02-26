@@ -58,6 +58,15 @@
   box-sizing: border-box;
 }
 
+/* Base body — Inter font + light page bg */
+body {
+  font-family: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
+  color: #111827;
+  background: #f3f4f6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* Headings */
 h1,
 h2,
@@ -1178,26 +1187,69 @@ img {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background: #f3f4f6;
 }
 .dashboard-main {
   flex: 1;
 }
-.dashboard-nav {
+/* Max-width page content wrapper */
+.dashboard-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+@media (max-width: 640px) {
+  .dashboard-content {
+    padding: 1.25rem 1rem;
+  }
+}
+
+/* Page title */
+.dashboard-page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 1.25rem;
+  letter-spacing: -0.01em;
+}
+
+/* Section headings (My Properties etc.) */
+.dashboard-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Empty state text */
+.dashboard-empty {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0 0 1rem;
+}
+
+.page-background {
+  min-height: 100vh;
+  background: linear-gradient(
+    135deg,
+    #e3e5e6 0%,
+    #e5e7e9 30%,
+    #eeecdf 70%,
+    #f6efc6 100%
+  );
+}
+
+.navbar-wrapper {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  height: 56px;
-  background: #0f0f0f;
-  border-bottom: 1px solid #1f1f1f;
+  justify-content: flex-end;
+  width: 100%;
+  padding: 1.5rem 2rem;
+  background: transparent;
   position: sticky;
   top: 0;
   z-index: 50;
-}
-.nav-logo {
-  font-weight: 700;
-  color: #fff;
-  text-decoration: none;
 }
 .nav-right {
   display: flex;
