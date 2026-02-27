@@ -1,5 +1,6 @@
 import SignupForm from "./signup-form";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -38,8 +39,16 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/* RIGHT — placeholder black panel */}
-      <div className="auth-right" />
+      {/* RIGHT — image panel */}
+      <div className="auth-right">
+        <Image
+          src="/img/login.jpg"
+          alt="Rental property"
+          fill
+          style={{ objectFit: "cover" }}
+          priority
+        />
+      </div>
     </div>
   );
 }

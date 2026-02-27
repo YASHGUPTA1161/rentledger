@@ -3,6 +3,7 @@ import { jwtVerify } from "jose";
 import { redirect } from "next/navigation";
 import db from "@/lib/prisma";
 import { ProfileClient } from "./ProfileClient";
+import { ProfileNav } from "../components/ProfileNav";
 
 export default async function ProfilePage() {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="property-page">
+      <ProfileNav />
       <h1>👤 Profile</h1>
       <ProfileClient
         name={landlord.name}

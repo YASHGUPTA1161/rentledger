@@ -101,29 +101,96 @@ export function DashboardNav({
   return (
     <>
       <nav className="navbar-wrapper">
-        <div className="flex bg-white w-fit px-1.25 py-1.25 shadow-box-up rounded-2xl dark:bg-box-dark dark:shadow-box-dark-out">
-          <div className="dark:shadow-buttons-box-dark rounded-2xl w-full px-1.5 py-1.5 md:px-3 md:py-3 flex items-center">
+        <div className="nav-pill-outer">
+          <div className="nav-pill-inner">
             <div className="nav-right">
-              {/* Bell */}
+              {/* Bell / Alerts */}
               <button
-                className="nav-bell"
+                className="nav-exp-link"
                 onClick={() => setPopupOpen(true)}
                 title={`${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`}
               >
-                🔔{" "}
-                {unreadCount > 0 && (
-                  <span className="nav-badge">{unreadCount}</span>
-                )}
+                <span className="nav-exp-icon">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="nav-badge">{unreadCount}</span>
+                  )}
+                </span>
+                <span className="nav-exp-title">Alerts</span>
               </button>
 
-              <Link href="/dashboard/docs" className="nav-contact-link">
-                Docs
+              {/* Docs */}
+              <Link href="/dashboard/docs" className="nav-exp-link">
+                <span className="nav-exp-icon">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                  </svg>
+                </span>
+                <span className="nav-exp-title">Docs</span>
               </Link>
-              <Link href="/contact" className="nav-contact-link">
-                Contact
+
+              {/* Contact */}
+              <Link href="/contact" className="nav-exp-link">
+                <span className="nav-exp-icon">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </span>
+                <span className="nav-exp-title">Contact</span>
               </Link>
-              <Link href="/pricing" className="nav-contact-link">
-                Pricing
+
+              {/* Pricing */}
+              <Link href="/pricing" className="nav-exp-link">
+                <span className="nav-exp-icon">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                </span>
+                <span className="nav-exp-title">Pricing</span>
               </Link>
 
               {/* Avatar + dropdown */}
@@ -138,11 +205,24 @@ export function DashboardNav({
 
                 {open && (
                   <div className="nav-dropdown">
-                    <p className="nav-user-name">{userName}</p>
-                    {userEmail && <p className="nav-user-email">{userEmail}</p>}
-                    <p className="nav-user-role">{role}</p>
+                    {/* Large avatar */}
+                    <div
+                      className="nav-drop-avatar"
+                      style={getAvatarStyle(userName)}
+                    >
+                      {userName.charAt(0).toUpperCase()}
+                    </div>
 
-                    {/* ── Currency flag button ── */}
+                    {/* Text block */}
+                    <div className="nav-drop-text">
+                      <p className="nav-user-name">{userName}</p>
+                      {userEmail && (
+                        <p className="nav-user-email">{userEmail}</p>
+                      )}
+                      <p className="nav-user-role">{role}</p>
+                    </div>
+
+                    {/* Currency */}
                     {role === "landlord" && (
                       <div className="nav-currency-wrap" ref={flagRef}>
                         <button
