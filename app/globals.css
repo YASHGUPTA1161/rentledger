@@ -1000,6 +1000,35 @@ img {
   flex-direction: column;
   gap: 0.25rem;
 }
+
+/* Mobile responsive layout */
+@media (max-width: 768px) {
+  .property-page {
+    padding: 1rem;
+  }
+
+  .property-layout {
+    flex-direction: column;
+  }
+
+  .property-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding-right: 0;
+    padding-bottom: 1rem;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    gap: 0.5rem;
+  }
+
+  .property-tab {
+    width: auto;
+    flex-shrink: 0;
+  }
+}
 .property-tab {
   width: 100%;
   text-align: left;
