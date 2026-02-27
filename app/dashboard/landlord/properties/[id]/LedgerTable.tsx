@@ -179,64 +179,66 @@ export function LedgerTable({
         </div>
       </div>
 
-      <table className="ledger-table">
-        <thead>
-          <tr>
-            {isLandlord && <th>{LEDGER_COLUMNS.checkbox}</th>}
-            <th>{LEDGER_COLUMNS.date}</th>
-            <th>{LEDGER_COLUMNS.description}</th>
-            <th>{LEDGER_COLUMNS.currMeter}</th>
-            <th>{LEDGER_COLUMNS.rate}</th>
-            <th>{LEDGER_COLUMNS.units}</th>
-            <th>{LEDGER_COLUMNS.electricity}</th>
-            <th>{LEDGER_COLUMNS.water}</th>
-            <th>{LEDGER_COLUMNS.rent}</th>
-            <th>{LEDGER_COLUMNS.debit}</th>
-            <th>{LEDGER_COLUMNS.credit}</th>
-            <th>{LEDGER_COLUMNS.method}</th>
-            <th>{LEDGER_COLUMNS.proof}</th>
-            <th>{LEDGER_COLUMNS.verify}</th>
-            {isLandlord && <th>{LEDGER_COLUMNS.actions}</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {pendingRows.map((rowId) => (
-            <NewEntryRow
-              key={rowId}
-              rowId={rowId}
-              tenancyId={tenancyId}
-              currency={currency}
-              previousReading={lastMeterReading}
-              onSubmit={(formData) => handleSubmitNew(formData, rowId)}
-              onCancel={() => handleCancelRow(rowId)}
-            />
-          ))}
+      <div className="ledger-table-responsive">
+        <table className="ledger-table">
+          <thead>
+            <tr>
+              {isLandlord && <th>{LEDGER_COLUMNS.checkbox}</th>}
+              <th>{LEDGER_COLUMNS.date}</th>
+              <th>{LEDGER_COLUMNS.description}</th>
+              <th>{LEDGER_COLUMNS.currMeter}</th>
+              <th>{LEDGER_COLUMNS.rate}</th>
+              <th>{LEDGER_COLUMNS.units}</th>
+              <th>{LEDGER_COLUMNS.electricity}</th>
+              <th>{LEDGER_COLUMNS.water}</th>
+              <th>{LEDGER_COLUMNS.rent}</th>
+              <th>{LEDGER_COLUMNS.debit}</th>
+              <th>{LEDGER_COLUMNS.credit}</th>
+              <th>{LEDGER_COLUMNS.method}</th>
+              <th>{LEDGER_COLUMNS.proof}</th>
+              <th>{LEDGER_COLUMNS.verify}</th>
+              {isLandlord && <th>{LEDGER_COLUMNS.actions}</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {pendingRows.map((rowId) => (
+              <NewEntryRow
+                key={rowId}
+                rowId={rowId}
+                tenancyId={tenancyId}
+                currency={currency}
+                previousReading={lastMeterReading}
+                onSubmit={(formData) => handleSubmitNew(formData, rowId)}
+                onCancel={() => handleCancelRow(rowId)}
+              />
+            ))}
 
-          {entries.map((entry) => (
-            <EntryRow
-              key={entry.id}
-              entry={entry}
+            {entries.map((entry) => (
+              <EntryRow
+                key={entry.id}
+                entry={entry}
+                isLandlord={isLandlord}
+                isSelected={selectedRows.has(entry.id)}
+                currency={currency}
+                onToggleSelect={() => toggleRowSelection(entry.id)}
+                onDelete={() => handleDelete(entry.id)}
+                isEditing={editingId === entry.id}
+                canEdit={canEditEntry(entry)}
+                onStartEdit={() => setEditingId(entry.id)}
+                onCancelEdit={() => setEditingId(null)}
+                onSaveEdit={handleSaveEdit}
+                onVerify={onVerify}
+              />
+            ))}
+
+            <LedgerTotals
+              entries={entries}
               isLandlord={isLandlord}
-              isSelected={selectedRows.has(entry.id)}
               currency={currency}
-              onToggleSelect={() => toggleRowSelection(entry.id)}
-              onDelete={() => handleDelete(entry.id)}
-              isEditing={editingId === entry.id}
-              canEdit={canEditEntry(entry)}
-              onStartEdit={() => setEditingId(entry.id)}
-              onCancelEdit={() => setEditingId(null)}
-              onSaveEdit={handleSaveEdit}
-              onVerify={onVerify}
             />
-          ))}
-
-          <LedgerTotals
-            entries={entries}
-            isLandlord={isLandlord}
-            currency={currency}
-          />
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

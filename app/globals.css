@@ -346,7 +346,13 @@ img {
 /* Container */
 .ledger-container {
   width: 100%;
+}
+
+/* Scrollable wrapper for just the table */
+.ledger-table-responsive {
+  width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ledger-header {
