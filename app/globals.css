@@ -1153,39 +1153,63 @@ img {
 
 .tenant-tabs-layout {
   display: flex;
-  gap: 1.5rem;
+  gap: 2rem;
   margin-top: 2rem;
+  align-items: flex-start;
+}
+
+@media (max-width: 768px) {
+  .tenant-tabs-layout {
+    flex-direction: column;
+  }
 }
 
 /* Sidebar */
 .tenant-tabs-sidebar {
   width: 16rem;
-  border-right: 1px solid #e5e7eb;
-  padding-right: 1.5rem;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border-radius: 16px;
+  padding: 1.5rem;
   flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .tenant-tabs-sidebar {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
 }
 
 /* Active tenancy info card */
 .tenant-active-card {
-  background: #f0fdf4;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
   border: 1px solid #bbf7d0;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 16px;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.5);
 }
 
 .tenant-active-label {
   margin: 0;
   font-size: 0.75rem;
-  color: #15803d;
-  font-weight: 600;
+  color: #166534;
+  font-weight: 700;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .tenant-active-rent {
-  margin: 4px 0 0;
-  font-size: 0.875rem;
-  color: #166534;
+  margin: 6px 0 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #14532d;
 }
 
 /* Tab nav buttons */
@@ -1195,34 +1219,54 @@ img {
   gap: 0.75rem;
   width: 100%;
   text-align: left;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
+  padding: 0.85rem 1.125rem;
+  border-radius: 10px;
   border: none;
   background: transparent;
   cursor: pointer;
   margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-  color: #374151;
-  transition: background 0.15s;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #4b5563;
+  transition: all 0.2s ease;
 }
 
 .tenant-tab-btn:hover {
-  background: #f3f4f6;
+  background: rgba(255, 255, 255, 0.8);
+  color: #111827;
+  transform: translateX(4px);
 }
 
 .tenant-tab-btn--active {
-  background: #2563eb;
-  color: #fff;
+  background: #ffffff;
+  color: #2563eb;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e5e7eb;
 }
 
 .tenant-tab-btn--active:hover {
-  background: #1d4ed8;
+  background: #ffffff;
+  transform: none;
 }
 
 /* Content area */
 .tenant-tabs-content {
   flex: 1;
   min-width: 0;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+@media (max-width: 640px) {
+  .tenant-tabs-content {
+    padding: 1.25rem;
+  }
 }
 
 /* === Dashboard Nav === */
