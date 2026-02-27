@@ -16,7 +16,7 @@ interface Props {
 const TEMPLATES = [
   {
     id: "reminder",
-    label: "🔔 Rent Reminder",
+    label: "Rent Reminder",
     title: "Rent Reminder",
     message:
       "This is a reminder that your rent payment is due soon. Please arrange payment at your earliest convenience.",
@@ -105,7 +105,17 @@ export function NotificationPopup({ tenants, onClose }: Props) {
       <div className="notif-popup" role="dialog" aria-modal="true">
         {/* Header */}
         <div className="notif-header">
-          <span className="notif-title">🔔 Notifications</span>
+          <span className="notif-title">
+            <i
+              className="fi fi-br-bell"
+              style={{
+                fontSize: "16px",
+                marginRight: "6px",
+                verticalAlign: "middle",
+              }}
+            ></i>
+            Notifications
+          </span>
           <button className="notif-close" onClick={onClose} aria-label="Close">
             ✕
           </button>
@@ -181,13 +191,13 @@ export function NotificationPopup({ tenants, onClose }: Props) {
                 <ul className="notif-tenant-list">
                   {tenants.map((t) => (
                     <li key={t.id} className="notif-tenant-item">
-                      <label className="notif-tenant-label">
+                      <label className="material-checkbox notif-tenant-label">
                         <input
                           type="checkbox"
-                          className="notif-checkbox"
                           checked={selected.includes(t.id)}
                           onChange={() => toggleTenant(t.id)}
                         />
+                        <span className="checkmark"></span>
                         {t.fullName}
                       </label>
                     </li>
@@ -198,13 +208,16 @@ export function NotificationPopup({ tenants, onClose }: Props) {
 
             {/* Email option */}
             <div className="notif-section">
-              <label className="notif-tenant-label" style={{ padding: 0 }}>
+              <label
+                className="material-checkbox notif-tenant-label"
+                style={{ padding: 0 }}
+              >
                 <input
                   type="checkbox"
-                  className="notif-checkbox"
                   checked={sendEmail}
                   onChange={(e) => setSendEmail(e.target.checked)}
                 />
+                <span className="checkmark"></span>
                 Also send via email
                 {templateId === "invoice" && " (includes bill summary)"}
               </label>

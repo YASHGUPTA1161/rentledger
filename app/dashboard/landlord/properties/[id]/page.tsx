@@ -216,7 +216,18 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
   return (
     <div className="property-page">
-      <h1>📍 {property.address}</h1>
+      <h1>
+        <i
+          className="fi fi-sr-marker"
+          style={{
+            fontSize: "24px",
+            marginRight: "8px",
+            verticalAlign: "middle",
+            color: "#ef4444",
+          }}
+        ></i>
+        {property.address}
+      </h1>
       <PropertyTabs
         propertyId={property.id}
         currency={defaultCurrency}

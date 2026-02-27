@@ -40,7 +40,9 @@ export function PropertyList({ properties }: { properties: Property[] }) {
               onClick={() => toggleExpand(property.id)}
               aria-expanded={isExpanded}
             >
-              <span className="plist-pin">📍</span>
+              <span className="plist-pin">
+                <i className="fi fi-sr-marker"></i>
+              </span>
               <span className="plist-address">{property.address}</span>
               <span
                 className={`plist-chevron${isExpanded ? " plist-chevron--up" : ""}`}

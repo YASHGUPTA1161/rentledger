@@ -198,7 +198,16 @@ export default async function TenantDashboard() {
     <div style={{ padding: "2rem" }}>
       <h1>🏢 {tenant.fullName}&apos;s Dashboard</h1>
       <p style={{ color: "#6b7280", marginBottom: "0.5rem" }}>
-        📍 {activeTenancy.property.address} &mdash; ₹
+        <i
+          className="fi fi-sr-marker"
+          style={{
+            fontSize: "14px",
+            marginRight: "4px",
+            verticalAlign: "middle",
+            color: "#ef4444",
+          }}
+        ></i>
+        {activeTenancy.property.address} &mdash; ₹
         {activeTenancy.monthlyRent.toNumber().toLocaleString()}/month
       </p>
       <TenantTabs
